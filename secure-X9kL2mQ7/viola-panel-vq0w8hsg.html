@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>ڤيولا - لوحة التحكم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #fff5f8; padding: 0; direction: rtl; font-family: 'Tajawal', sans-serif; min-height: 100vh; }
+        .admin-header { background: white; padding: 15px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid #f8bbd9; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h1 { color: #e91e63; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+        .logout-btn { background: linear-gradient(135deg, #e91e63, #f06292); color: white; border: none; padding: 8px 16px; border-radius: 40px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .tabs { display: flex; gap: 4px; margin: 12px 12px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { background: white; border: 1px solid #f8bbd9; padding: 8px 14px; font-size: 0.75rem; font-weight: 600; color: #b08a9e; cursor: pointer; border-radius: 40px; transition: 0.2s; font-family: 'Tajawal', sans-serif; white-space: nowrap; }
+        .tab-btn i { margin-left: 5px; }
+        .tab-btn.active { background: linear-gradient(135deg, #e91e63, #f06292); color: white; border-color: #e91e63; }
+        @media (min-width: 600px) { .tabs { gap: 8px; } .tab-btn { padding: 10px 20px; font-size: 0.85rem; } }
+        .tab-content { display: none; padding: 0 12px 20px 12px; animation: fadeIn 0.2s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .form-card { background: white; border-radius: 20px; padding: 16px; margin-bottom: 20px; border: 1px solid #f8bbd9; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .form-card h3 { color: #e91e63; margin-bottom: 12px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.8rem; font-weight: 600; color: #4a1a3a; }
+        input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #f8bbd9; border-radius: 30px; font-family: inherit; font-size: 0.85rem; background: white; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #e91e63; box-shadow: 0 0 0 2px rgba(233,30,99,0.1); }
+        .file-upload-btn { background: #fce4ec; padding: 8px 16px; border-radius: 40px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; border: 1px solid #f8bbd9; width: 100%; justify-content: center; }
+        .row-2 { display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 500px) { .row-2 { flex-direction: row; gap: 12px; } .row-2 > * { flex: 1; } }
+        .btn { border: none; padding: 10px 16px; border-radius: 40px; font-weight: bold; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Tajawal', sans-serif; width: 100%; }
+        .btn-primary { background: linear-gradient(135deg, #e91e63, #f06292); color: white; }
+        .btn-secondary { background: #fce4ec; color: #4a1a3a; border: 1px solid #f8bbd9; }
+        .btn-danger { background: linear-gradient(135deg, #c2185b, #e91e63); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.7rem; width: auto; }
+        .items-list { max-height: 500px; overflow-y: auto; padding: 4px; }
+        .item-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 12px; border: 1px solid #f8bbd9; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+        .item-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .item-img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; background: #fce4ec; }
+        .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .badge { font-size: 0.65rem; padding: 3px 10px; border-radius: 30px; display: inline-block; }
+        .badge-active { background: #a8e6cf; color: #1b4332; }
+        .badge-inactive { background: #f8bbd9; color: #4a1a3a; }
+        .badge-coupon { background: #ffe0f0; color: #e91e63; font-weight: bold; }
+        .badge-order { background: #e91e63; color: white; }
+        .edit-form { display: none; margin-top: 12px; background: #fff0f5; padding: 12px; border-radius: 16px; }
+        .edit-form.open { display: block; }
+        .size-tag { display: inline-flex; align-items: center; gap: 5px; background: #fce4ec; padding: 4px 10px; border-radius: 30px; margin: 4px; font-size: 0.7rem; }
+        .remove-tag { background: none; border: none; color: #e91e63; cursor: pointer; margin-right: 5px; }
+        .search-box { display: flex; align-items: center; background: #fffafc; border: 1px solid #f8bbd9; border-radius: 50px; padding: 5px 16px; margin-bottom: 16px; }
+        .search-box i { color: #e91e63; margin-left: 10px; }
+        .search-box input { border: none; background: transparent; padding: 10px 0; margin: 0; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #a8e6cf; color: #1b4332; padding: 10px 20px; border-radius: 50px; font-size: 0.8rem; z-index: 10000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: bold; white-space: nowrap; }
+        .toast.error { background: #e91e63; color: white; }
+        .empty-msg { text-align: center; padding: 30px; color: #b08a9e; }
+        .footer-credit { text-align: center; margin-top: 20px; padding: 15px; font-size: 0.7rem; color: #b08a9e; border-top: 1px solid #f8bbd9; }
+        .order-items-list { font-size: 0.75rem; margin-top: 8px; padding: 8px; background: #fffafc; border-radius: 12px; }
+        .price-value { font-family: monospace; font-size: 0.85rem; font-weight: bold; }
+        
+        /* Dynamic images responsive */
+        .item-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        .form-card img.preview-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="admin-header">
+    <h1><i class="fas fa-crown"></i> لوحة التحكم - ڤيولا</h1>
+    <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" data-tab="orders"><i class="fas fa-truck"></i> الطلبات</button>
+    <button class="tab-btn" data-tab="ads"><i class="fas fa-ad"></i> إعلانات</button>
+    <button class="tab-btn" data-tab="categories"><i class="fas fa-layer-group"></i> أقسام</button>
+    <button class="tab-btn" data-tab="subcategories"><i class="fas fa-folder"></i> فئات</button>
+    <button class="tab-btn" data-tab="products"><i class="fas fa-box"></i> منتجات</button>
+    <button class="tab-btn" data-tab="coupons"><i class="fas fa-ticket-alt"></i> كوبونات</button>
+    <button class="tab-btn" data-tab="settings"><i class="fas fa-cog"></i> إعدادات</button>
+</div>
+
+<!-- ==================== تبويب الطلبات ==================== -->
+<div id="tabOrders" class="tab-content active">
+    <h3 style="margin: 5px 0 15px; font-size:1rem;"><i class="fas fa-truck"></i> الطلبات المستلمة</h3>
+    <div class="search-box" style="position:relative;"><i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#e91e63;z-index:2;"></i><input type="text" id="searchOrders" placeholder="ابحث باسم العميل أو رقم الهاتف..." style="padding-right:36px;padding-left:36px;width:100%;border:none;background:transparent;padding-top:10px;padding-bottom:10px;margin:0;"><button type="button" id="clearSearchOrders" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;background:#fce4ec;border:none;border-radius:50%;color:#e91e63;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:0.75rem;z-index:2;" onclick="clearAdminSearch('searchOrders','clearSearchOrders')"><i class="fas fa-times"></i></button></div>
+    <div id="ordersStats" class="badge" style="background:#fce4ec; display:inline-block; margin-bottom:10px;"></div>
+    <div id="ordersList" class="items-list"></div>
+</div>
+
+<!-- ==================== تبويب الإعلانات ==================== -->
+<div id="tabAds" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-plus-circle"></i> إضافة إعلان جديد</h3>
+        <div class="file-upload-btn" onclick="document.getElementById('newAdImageFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة الإعلان</div>
+        <input type="file" id="newAdImageFile" accept="image/*" style="display:none">
+        <div id="newAdFileName" style="font-size:0.7rem; margin:5px 0;">📁 لم يتم اختيار ملف</div>
+        <input type="text" id="newAdText" placeholder="نص الإعلان (اختياري)" style="margin-top:8px;">
+        <button id="addAdBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-plus"></i> إضافة إعلان</button>
+    </div>
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-list"></i> الإعلانات الحالية</h3>
+    <div id="adsList" class="items-list"></div>
+</div>
+
+<!-- ==================== تبويب الأقسام ==================== -->
+<div id="tabCategories" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-plus-circle"></i> إضافة قسم جديد</h3>
+        <div class="row-2"><input type="text" id="newCatName" placeholder="اسم القسم"><input type="number" id="newCatOrder" placeholder="الترتيب" value="1" min="1"></div>
+        <div class="file-upload-btn" onclick="document.getElementById('newCatImageFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة القسم</div>
+        <input type="file" id="newCatImageFile" accept="image/*" style="display:none">
+        <div id="newCatFileName" style="font-size:0.7rem; margin:5px 0;">📁 لم يتم اختيار ملف</div>
+        <button id="addCategoryBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-plus"></i> إضافة قسم</button>
+    </div>
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-list"></i> الأقسام الحالية</h3>
+    <div id="categoriesList" class="items-list"></div>
+</div>
+
+<!-- ==================== تبويب الفئات ==================== -->
+<div id="tabSubcategories" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-plus-circle"></i> إضافة فئة جديدة</h3>
+        <div class="row-2"><input type="text" id="newSubcatName" placeholder="اسم الفئة"><select id="newSubcatCategory"><option value="">اختر القسم</option></select></div>
+        <div class="file-upload-btn" onclick="document.getElementById('newSubcatImageFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة الفئة (اختياري)</div>
+        <input type="file" id="newSubcatImageFile" accept="image/*" style="display:none">
+        <div id="newSubcatFileName" style="font-size:0.7rem; margin:5px 0;">📁 لم يتم اختيار ملف</div>
+        <button id="addSubcategoryBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-plus"></i> إضافة فئة</button>
+    </div>
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-list"></i> الفئات الحالية</h3>
+    <div id="subcategoriesList" class="items-list"></div>
+</div>
+
+<!-- ==================== تبويب المنتجات ==================== -->
+<div id="tabProducts" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-plus-circle"></i> إضافة منتج جديد</h3>
+        <div class="row-2"><input type="text" id="prodName" placeholder="اسم المنتج"><input type="text" id="prodPrice" placeholder="السعر $"></div>
+        <div class="row-2"><input type="text" id="prodOld" placeholder="السعر قبل الخصم"><input type="text" id="prodCode" placeholder="رمز المنتج (اختياري)"></div>
+        <div class="row-2"><select id="prodCategory"><option value="">اختر القسم</option></select><select id="prodSubcategory"><option value="">اختر الفئة</option></select></div>
+        <textarea id="prodDesc" rows="2" placeholder="وصف المنتج"></textarea>
+        <div class="file-upload-btn" onclick="document.getElementById('prodImageFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة المنتج</div>
+        <input type="file" id="prodImageFile" accept="image/*" style="display:none">
+        <div id="prodFileName" style="font-size:0.7rem; margin:5px 0;">📷 لم يتم اختيار ملف</div>
+        <div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-ruler"></i> المقاسات المتاحة</label><div id="sizesContainer" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;"></div><div class="row-2"><select id="sizeSelect"><option value="">اختر مقاس</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option></select><button class="btn btn-secondary" onclick="addSize()">+ إضافة مقاس</button></div></div>
+        <div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-palette"></i> الألوان المتاحة</label><div id="colorsContainer" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;"></div><div class="row-2"><input type="text" id="colorInput" placeholder="مثال: أحمر"><button class="btn btn-secondary" onclick="addColor()">+ إضافة لون</button></div></div>
+        <button id="addProductBtn" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة منتج</button>
+        <div id="productLoader" style="display:none; text-align:center; margin-top:10px;"><i class="fas fa-spinner fa-spin"></i> جاري...</div>
+    </div>
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-boxes"></i> جميع المنتجات</h3>
+    <div class="search-box" style="position:relative;"><i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#e91e63;z-index:2;"></i><input type="text" id="searchProducts" placeholder="ابحث بالاسم أو الرمز..." style="padding-right:36px;padding-left:36px;width:100%;border:none;background:transparent;padding-top:10px;padding-bottom:10px;margin:0;"><button type="button" id="clearSearchProducts" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;background:#fce4ec;border:none;border-radius:50%;color:#e91e63;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:0.75rem;z-index:2;" onclick="clearAdminSearch('searchProducts','clearSearchProducts')"><i class="fas fa-times"></i></button></div>
+    <div id="productsStats" class="badge" style="background:#fce4ec; display:inline-block; margin-bottom:10px;"></div>
+    <div id="productsList" class="items-list"></div>
+</div>
+
+<!-- ==================== تبويب كوبونات الخصم ==================== -->
+<div id="tabCoupons" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-plus-circle"></i> إضافة كوبون خصم جديد</h3>
+        <div class="row-2"><input type="text" id="couponCode" placeholder="كود الخصم"><select id="couponType"><option value="percentage">نسبة مئوية (%)</option><option value="fixed">قيمة ثابتة ($)</option></select></div>
+        <div class="row-2"><input type="text" id="couponValue" placeholder="قيمة الخصم"><input type="text" id="couponMinAmount" placeholder="الحد الأدنى للطلب (اختياري)"></div>
+        <div class="row-2"><input type="date" id="couponExpiry" placeholder="تاريخ الانتهاء"><input type="number" id="couponUsageLimit" placeholder="عدد مرات الاستخدام (اتركه فارغاً لغير محدود)"></div>
+        <button id="addCouponBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-plus"></i> إضافة كوبون</button>
+    </div>
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-ticket-alt"></i> كوبونات الخصم الحالية</h3>
+    <div id="couponsList" class="items-list"></div>
+</div>
+
+
+<!-- ==================== تبويب الإعدادات ==================== -->
+<div id="tabSettings" class="tab-content">
+    <div class="form-card">
+        <h3><i class="fas fa-gift"></i> إعدادات التغليف والهدايا</h3>
+        <div class="row-2">
+            <div class="form-group">
+                <label><i class="fas fa-box"></i> الحد الأدنى للتغليف المجاني (بالدولار)</label>
+                <input type="number" id="giftBoxThreshold" placeholder="مثال: 50" min="0" step="1">
+                <small style="color:#b08a9e; font-size:0.7rem;">إذا كان المجموع أقل من هذا المبلغ، سيظهر للمستخدم رسالة أن التغليف في بوكس غير متوفر</small>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-comment"></i> رسالة التنبيه عند عدم توفر التغليف</label>
+                <input type="text" id="giftBoxMessage" placeholder="عبارة التنبيه..." value="عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁">
+            </div>
+        </div>
+        <button id="saveGiftSettingsBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> حفظ إعدادات التغليف</button>
+    </div>
+
+    <div class="form-card">
+        <h3><i class="fas fa-qrcode"></i> إعدادات الدفع بالباركود</h3>
+        <div class="form-group">
+            <label><i class="fas fa-image"></i> صورة باركود الدفع</label>
+            <div class="file-upload-btn" onclick="document.getElementById('paymentBarcodeFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة الباركود</div>
+            <input type="file" id="paymentBarcodeFile" accept="image/*" style="display:none">
+            <div id="paymentBarcodeFileName" style="font-size:0.7rem; margin:5px 0;">📁 لم يتم اختيار ملف</div>
+            <div id="paymentBarcodePreview" style="margin-top:10px; display:none;">
+                <img id="paymentBarcodeImg" src="" style="max-width:200px; border-radius:12px; border:2px solid #f8bbd9;">
+            </div>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-heading"></i> عنوان طريقة الدفع بالباركود</label>
+            <input type="text" id="paymentBarcodeTitle" placeholder="مثال: الدفع عبر الباركود / SyriaTel Cash" value="الدفع السريع عبر الباركود 📱">
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-info-circle"></i> وصف طريقة الدفع</label>
+            <textarea id="paymentBarcodeDesc" rows="2" placeholder="وصف طريقة الدفع...">امسح الباركود باستخدام تطبيق المحفظة الإلكترونية لديك لإتمام الدفع فوراً</textarea>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-toggle-on"></i> تفعيل الدفع بالباركود</label>
+            <select id="paymentBarcodeEnabled">
+                <option value="true">مفعل ✅</option>
+                <option value="false">معطل ❌</option>
+            </select>
+        </div>
+        <button id="savePaymentBarcodeBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> حفظ إعدادات الباركود</button>
+    </div>
+
+    <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-eye"></i> المعاينة الحالية</h3>
+    <div class="item-card" style="background:#fff0f5;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <i class="fas fa-gift" style="color:#e91e63; font-size:1.2rem;"></i>
+            <strong>الحد الأدنى للتغليف المجاني:</strong>
+            <span id="previewGiftThreshold" style="color:#e91e63; font-weight:bold;">غير محدد</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <i class="fas fa-qrcode" style="color:#e91e63; font-size:1.2rem;"></i>
+            <strong>الدفع بالباركود:</strong>
+            <span id="previewBarcodeStatus" style="color:#e91e63; font-weight:bold;">غير مفعل</span>
+        </div>
+        <div id="previewBarcodeImg" style="display:none; margin-top:10px;">
+            <img id="previewBarcodeImage" src="" style="max-width:150px; border-radius:8px; border:2px solid #f8bbd9;">
+        </div>
+    </div>
+</div>
+
+<div class="footer-credit">💜 تم التصميم بواسطة <strong>Ahmad Kllawe</strong> © 2026</div>
+<div id="adminToast" class="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script>
+    // Helper: format price with 2 decimals
+    function formatPrice(price) {
+        if (price === undefined || price === null) return '0.00';
+        return parseFloat(price).toFixed(2);
+    }
+
+    // إخفاء رسائل Console الخاصة بالكوبونات فقط
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        const message = args.join(' ');
+        if (message.includes('الكوبون') || message.includes('coupon') || message.includes('كود')) {
+            return;
+        }
+        originalConsoleLog.apply(console, args);
+    };
+
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyD9BbiQfVKWazBtuXE-g0HRkkq87qNY080",
+        authDomain: "enath11.firebaseapp.com",
+        databaseURL: "https://enath11-default-rtdb.firebaseio.com",
+        projectId: "enath11",
+        storageBucket: "enath11.firebasestorage.app",
+        messagingSenderId: "1092002726764",
+        appId: "1:1092002726764:web:20626338f00627d82ae949"
+    };
+    
+    const CLOUD_NAME = "dfrvcl2m5";
+    const UPLOAD_PRESET = "violla";
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    let currentUserRole = 'admin';
+    let ads = [], categories = [], products = [], coupons = [], orders = [];
+    let realtimeListeners = {};
+    let lastSearchText = "";
+    let lastOrderSearchText = "";
+    let tempSizes = [], tempColors = [];
+    let tempEditCatFile = null;
+    let tempEditProductFile = {};
+    
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('adminToast');
+        t.innerText = msg;
+        t.className = 'toast' + (isError ? ' error' : '');
+        t.style.opacity = '1';
+        setTimeout(() => t.style.opacity = '0', 2500);
+    }
+    
+    function generateProductCode() { return 'VIO' + Math.random().toString(36).substring(2, 10).toUpperCase(); }
+    function escapeHtml(s) { if (!s) return ''; return s.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+    function formatDate(ts) { if (!ts) return "تاريخ غير معروف"; const d = new Date(ts); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
+    
+    async function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width, height = img.height;
+                    const maxSize = 1200;
+                    if (width > height && width > maxSize) { height = (height * maxSize) / width; width = maxSize; }
+                    else if (height > maxSize) { width = (width * maxSize) / height; height = maxSize; }
+                    canvas.width = width; canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.6);
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    }
+    
+    async function uploadImageToCloudinary(file) {
+        const compressed = await compressImage(file);
+        const formData = new FormData();
+        formData.append('file', compressed);
+        formData.append('upload_preset', UPLOAD_PRESET);
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+        return data.secure_url;
+    }
+    
+    // ==================== Realtime Listeners ====================
+    function setupRealtimeListeners() {
+        // الاستماع للتغييرات في الطلبات
+        if (realtimeListeners.orders) db.ref('orders').off('value', realtimeListeners.orders);
+        realtimeListeners.orders = db.ref('orders').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const ordersData = snapshot.val();
+                orders = Object.keys(ordersData).map(key => ({ id: key, ...ordersData[key] }));
+                renderOrders();
+            } else {
+                orders = [];
+                renderOrders();
+            }
+        });
+        
+        // الاستماع للتغييرات في المنتجات
+        if (realtimeListeners.products) db.ref('products').off('value', realtimeListeners.products);
+        realtimeListeners.products = db.ref('products').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const productsData = snapshot.val();
+                products = Object.keys(productsData).map(key => ({ id: key, ...productsData[key] }));
+                renderProducts();
+                updateCategorySelects();
+            } else {
+                products = [];
+                renderProducts();
+            }
+        });
+        
+        // الاستماع للتغييرات في الفئات
+        if (realtimeListeners.categories) db.ref('categories').off('value', realtimeListeners.categories);
+        realtimeListeners.categories = db.ref('categories').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const categoriesData = snapshot.val();
+                categories = Object.keys(categoriesData).map(key => ({ id: key, ...categoriesData[key] }));
+                categories.forEach((c, idx) => { if (c.order === undefined) c.order = idx; if (!c.subcategories) c.subcategories = {}; });
+                categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+                renderCategories();
+                renderSubcategories();
+                updateCategorySelects();
+            }
+        });
+        
+        // الاستماع للتغييرات في الكوبونات
+        if (realtimeListeners.coupons) db.ref('coupons').off('value', realtimeListeners.coupons);
+        realtimeListeners.coupons = db.ref('coupons').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const couponsData = snapshot.val();
+                coupons = Object.keys(couponsData).map(key => ({ id: key, ...couponsData[key] }));
+                renderCoupons();
+            } else {
+                coupons = [];
+                renderCoupons();
+            }
+        });
+        
+        // الاستماع للتغييرات في الإعلانات
+        if (realtimeListeners.ads) db.ref('ads').off('value', realtimeListeners.ads);
+        realtimeListeners.ads = db.ref('ads').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const adsData = snapshot.val();
+                ads = Object.keys(adsData).map(key => ({ id: key, ...adsData[key] }));
+                if (currentUserRole === 'super') renderAds();
+            } else {
+                ads = [];
+                if (currentUserRole === 'super') renderAds();
+            }
+        });
+    }
+    
+    // ==================== عرض الطلبات ====================
+    function renderOrders() {
+        const container = document.getElementById('ordersList');
+        const statsSpan = document.getElementById('ordersStats');
+        if (!container) return;
+        let filtered = [...orders];
+        if (lastOrderSearchText && lastOrderSearchText.trim()) {
+            const lower = lastOrderSearchText.toLowerCase();
+            filtered = orders.filter(o => o.customer.fullName.toLowerCase().includes(lower) || o.customer.phone.includes(lower));
+        }
+        filtered.sort((a,b) => b.timestamp - a.timestamp);
+        statsSpan.innerHTML = `📦 إجمالي الطلبات: ${filtered.length}`;
+        if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد طلبات بعد</div>'; return; }
+        container.innerHTML = filtered.map(order => `
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-info">
+                        <span class="badge-order">طلب #${order.id.substring(0, 8)}</span>
+                        <strong>${escapeHtml(order.customer.fullName)}</strong>
+                        <span>📞 ${order.customer.phone}</span>
+                        <span>📍 ${order.customer.city}</span>
+                    </div>
+                    <div class="item-actions">
+                        ${order.paymentReceipt && order.paymentReceipt.data ? `
+                        <button class="btn btn-sm" style="background:#2ed573; color:white;" onclick="verifyPayment('${order.id}')"><i class="fas fa-check"></i> تحقق</button>
+                        <button class="btn btn-sm" style="background:#ff4757; color:white;" onclick="rejectPayment('${order.id}')"><i class="fas fa-times"></i> رفض</button>
+                        ` : ''}
+                        <button class="btn btn-danger btn-sm" onclick="deleteOrder('${order.id}')"><i class="fas fa-trash"></i> حذف</button>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; margin:5px 0;">📅 ${formatDate(order.timestamp)}</div>
+                <div class="order-items-list">
+                    <strong>المنتجات:</strong>
+                    ${order.items.map(item => `• ${item.name} x ${item.qty} = ${formatPrice(item.price * item.qty)}$ ${item.selectedSize ? `(مقاس: ${item.selectedSize})` : ''} ${item.selectedColor ? `(لون: ${item.selectedColor})` : ''}<br>`).join('')}
+                </div>
+                <div style="margin-top:8px;">
+                    <span>🏠 ${order.customer.address}</span><br>
+                    ${order.notes ? `<span>📝 ملاحظات: ${order.notes}</span><br>` : ''}
+                    ${order.coupon ? `<span>🎫 كود خصم: ${order.coupon.code} (${order.coupon.type === 'percentage' ? order.coupon.value+'%' : order.coupon.value+'$'})</span><br>` : ''}
+                    <strong>💰 المجموع الفرعي: ${formatPrice(order.subtotal)} $</strong><br>
+                    ${order.discount > 0 ? `<strong>🎁 الخصم: - ${formatPrice(order.discount)} $</strong><br>` : ''}
+                    <strong style="color:#e91e63;">💵 الإجمالي النهائي: ${formatPrice(order.total)} $</strong>
+                    ${order.paymentMethod ? `<br><span class="badge" style="background:${order.paymentMethod === 'barcode' ? '#e91e63' : '#b08a9e'}; color:white; margin-top:4px; display:inline-block;">${order.paymentMethod === 'barcode' ? '💳 دفع بالباركود' : '💵 دفع يدوي'}</span>` : ''}
+                    ${order.paymentStatus ? `<span class="badge" style="background:${order.paymentStatus === 'verified' ? '#2ed573' : order.paymentStatus === 'rejected' ? '#ff4757' : '#ffa502'}; color:white; margin-top:4px; display:inline-block;">${order.paymentStatus === 'verified' ? '✅ تم التحقق' : order.paymentStatus === 'rejected' ? '❌ مرفوض' : '⏳ قيد المراجعة'}</span>` : ''}
+                </div>
+                ${order.paymentReceipt && order.paymentReceipt.data ? `
+                <div style="margin-top:12px; text-align:center;">
+                    ${order.paymentReceipt.type === 'base64_image' ? `
+                    <div style="font-size:0.8rem; color:#b08a9e; margin-bottom:8px;"><i class="fas fa-paperclip"></i> وصل الدفع المرفق:</div>
+                    <div style="display:inline-block; border:2px solid #f8bbd9; border-radius:12px; padding:8px; background:white; cursor:pointer;" onclick="showReceiptImage('${order.paymentReceipt.data.replace(/'/g, "\'")}')">
+                        <img src="${order.paymentReceipt.data}" style="max-width:200px; max-height:200px; border-radius:8px;" alt="وصل الدفع">
+                    </div>
+                    <div style="font-size:0.7rem; color:#b08a9e; margin-top:4px;"><i class="fas fa-search-plus"></i> اضغط للتكبير</div>
+                    ` : `
+                    <div style="background:#fff0f5; border-right:3px solid #e91e63; padding:12px; border-radius:12px; text-align:right;">
+                        <div style="font-size:0.8rem; color:#e91e63; margin-bottom:6px; font-weight:700;"><i class="fas fa-hand-holding-usd"></i> طريقة الدفع المختارة:</div>
+                        <div style="font-size:0.9rem; color:#4a1a3a; font-weight:600;">${order.paymentReceipt.data}</div>
+                    </div>
+                    `}
+                </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+    
+    // ==================== عرض الكوبونات ====================
+    function renderCoupons() {
+        const container = document.getElementById('couponsList');
+        if (!container) return;
+        if (coupons.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد كوبونات</div>'; return; }
+        container.innerHTML = coupons.map(c => {
+            const limit = c.usageLimit ? parseInt(c.usageLimit) : null;
+            const used = c.usedCount ? parseInt(c.usedCount) : 0;
+            const isExpired = limit !== null && used >= limit;
+            return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <span class="badge-coupon" style="font-size:0.9rem; font-weight:bold;">${c.code}</span>
+                            <span class="badge">${c.type === 'percentage' ? c.value + '%' : c.value + '$'}</span>
+                            <span class="badge ${c.active !== false ? 'badge-active' : 'badge-inactive'}">${c.active !== false ? 'نشط' : 'غير نشط'}</span>
+                            ${isExpired ? '<span class="badge" style="background:#ff4757; color:white;">منتهي</span>' : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-sm btn-primary" onclick="toggleCoupon('${c.id}')"><i class="fas fa-eye${c.active === false ? '-slash' : ''}"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCoupon('${c.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div style="font-size:0.7rem;">
+                        ${c.minAmount ? `💰 الحد الأدنى: ${formatPrice(c.minAmount)}$` : ''}
+                        ${c.expiryDate ? ` 📅 ينتهي: ${new Date(c.expiryDate).toLocaleDateString('ar-EG')}` : ''}
+                        ${limit !== null ? `<strong style="color:${isExpired ? '#ff4757' : '#e91e63'};">🎫 تم الاستخدام: ${used} من ${limit}</strong>` : '<span>🎫 غير محدود الاستخدام</span>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // ==================== عرض الإعلانات ====================
+    function renderAds() {
+        const container = document.getElementById('adsList');
+        if (!container || currentUserRole !== 'super') return;
+        const sortedAds = [...ads].reverse();
+        container.innerHTML = sortedAds.map(ad => `
+            <div class="item-card"><div class="item-header"><div class="item-info"><img src="${ad.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><span>${ad.text || 'بدون نص'}</span><span class="badge ${ad.active?'badge-active':'badge-inactive'}">${ad.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-primary" onclick="toggleAd('${ad.id}')"><i class="fas fa-eye${ad.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteAd('${ad.id}')"><i class="fas fa-trash"></i></button></div></div></div>
+        `).join('');
+    }
+    
+    // ==================== عرض الأقسام ====================
+    function renderCategories() {
+        const container = document.getElementById('categoriesList');
+        if (!container) return;
+        categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+        container.innerHTML = categories.map(cat => `
+            <div class="item-card"><div class="item-header"><div class="item-info"><img src="${cat.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><strong>${escapeHtml(cat.name)}</strong><span class="badge ${cat.active?'badge-active':'badge-inactive'}">${cat.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditCat('${cat.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleCategory('${cat.id}')"><i class="fas fa-eye${cat.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteCategory('${cat.id}')"><i class="fas fa-trash"></i></button></div></div>
+            <div id="editCat_${cat.id}" class="edit-form"><div class="row-2"><input type="text" id="editCatName_${cat.id}" value="${cat.name}"><input type="number" id="editCatOrder_${cat.id}" value="${(cat.order !== undefined ? cat.order + 1 : 1)}" min="1"></div><div class="file-upload-btn" onclick="document.getElementById('editCatFile_${cat.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editCatFile_${cat.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateCategory('${cat.id}')">حفظ</button><button class="btn btn-sm btn-secondary" onclick="closeEditCat('${cat.id}')">إلغاء</button></div></div></div>
+        `).join('');
+        categories.forEach(cat => { const ef = document.getElementById(`editCatFile_${cat.id}`); if(ef) ef.onchange = (e) => { tempEditCatFile = e.target.files[0]; showToast("تم اختيار صورة جديدة"); }; });
+    }
+    
+    // ==================== عرض الفئات ====================
+    function renderSubcategories() {
+        const container = document.getElementById('subcategoriesList');
+        if (!container) return;
+        let allSubcats = [];
+        categories.forEach(cat => { const subcats = cat.subcategories || {}; Object.keys(subcats).forEach(subId => { const sub = subcats[subId]; allSubcats.push({ id: subId, name: sub.name, image: sub.image, active: sub.active !== false, categoryId: cat.id, categoryName: cat.name }); }); });
+        if (allSubcats.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد فئات</div>'; return; }
+        container.innerHTML = allSubcats.map(sub => `
+            <div class="item-card"><div class="item-header"><div class="item-info">${sub.image ? `<img src="${sub.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;">` : `<div style="width:50px;height:50px;background:#fce4ec;border-radius:12px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-folder"></i></div>`}<strong>${escapeHtml(sub.name)}</strong><span class="badge" style="background:#fce4ec;">${sub.categoryName}</span><span class="badge ${sub.active?'badge-active':'badge-inactive'}">${sub.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditSubcat('${sub.categoryId}','${sub.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleSubcategory('${sub.categoryId}','${sub.id}')"><i class="fas fa-eye${sub.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteSubcategory('${sub.categoryId}','${sub.id}')"><i class="fas fa-trash"></i></button></div></div>
+            <div id="editSubcat_${sub.categoryId}_${sub.id}" class="edit-form"><input type="text" id="editSubcatName_${sub.categoryId}_${sub.id}" value="${sub.name}"><div class="file-upload-btn" onclick="document.getElementById('editSubcatFile_${sub.categoryId}_${sub.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editSubcatFile_${sub.categoryId}_${sub.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateSubcategory('${sub.categoryId}','${sub.id}')">حفظ</button><button class="btn btn-sm btn-secondary" onclick="closeEditSubcat('${sub.categoryId}','${sub.id}')">إلغاء</button></div></div></div>
+        `).join('');
+    }
+    
+    // ==================== عرض المنتجات ====================
+    function renderProducts() {
+        const container = document.getElementById('productsList');
+        const statsSpan = document.getElementById('productsStats');
+        if (!container) return;
+        let filtered = [...products];
+        if (lastSearchText && lastSearchText.trim()) { const lower = lastSearchText.toLowerCase(); filtered = products.filter(p => p.name.toLowerCase().includes(lower) || (p.code && p.code.toLowerCase().includes(lower))); }
+        statsSpan.innerHTML = `📦 ${filtered.length} منتج`;
+        if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد منتجات</div>'; return; }
+        const catsMap = Object.fromEntries(categories.map(c=>[c.id,c.name]));
+        container.innerHTML = filtered.map(p => `
+            <div class="item-card"><div class="item-header"><div class="item-info"><img src="${p.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><strong>${escapeHtml(p.name)}</strong> - ${formatPrice(p.price)}$<span class="badge" style="background:#e91e63; color:white;">${p.code || 'بدون'}</span><span class="badge ${p.active?'badge-active':'badge-inactive'}">${p.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditProduct('${p.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleProduct('${p.id}')"><i class="fas fa-eye${p.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button></div></div>
+            <div style="font-size:0.7rem; margin:5px 0;">القسم: ${catsMap[p.categoryId] || 'غير محدد'} | ${p.sizes?.length ? `📏 ${p.sizes.join(', ')}` : ''} ${p.colors?.length ? `🎨 ${p.colors.join(', ')}` : ''}</div>
+            <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
+        `).join('');
+        products.forEach(p => { const fi = document.getElementById(`editImgFile_${p.id}`); if(fi) fi.onchange = (e) => { tempEditProductFile[p.id] = e.target.files[0]; showToast("تم اختيار صورة جديدة"); }; });
+    }
+    
+    function renderAll() { if (currentUserRole === 'super') renderAds(); renderCategories(); renderSubcategories(); renderProducts(); renderCoupons(); renderOrders(); updateCategorySelects(); }
+    
+    // ==================== Category Functions ====================
+    window.openEditCat = (id) => { document.getElementById(`editCat_${id}`).classList.add('open'); };
+    window.closeEditCat = (id) => { document.getElementById(`editCat_${id}`).classList.remove('open'); };
+    window.toggleCategory = async (id) => { const cat = categories.find(c=>c.id===id); cat.active = !cat.active; await saveAll(); };
+    window.deleteCategory = async (id) => { if(confirm("سيتم حذف كل فئاته ومنتجاته")){ categories = categories.filter(c=>c.id!==id); products = products.filter(p=>p.categoryId!==id); await saveAll(); } };
+    window.updateCategory = async (id) => {
+        const newName = document.getElementById(`editCatName_${id}`).value.trim();
+        if(!newName) return showToast("اسم القسم مطلوب", true);
+        const orderRaw = document.getElementById(`editCatOrder_${id}`).value;
+        let newOrder = parseInt(orderRaw, 10) - 1;
+        const cat = categories.find(c=>c.id===id);
+        cat.name = newName;
+        cat.order = newOrder;
+        if(tempEditCatFile) { cat.image = await uploadImageToCloudinary(tempEditCatFile); tempEditCatFile = null; }
+        categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+        await saveAll();
+        closeEditCat(id);
+        showToast("تم تعديل القسم");
+    };
+    
+    // ==================== Subcategory Functions ====================
+    window.toggleSubcategory = async (catId, subId) => { const cat = categories.find(c => c.id === catId); if(cat.subcategories[subId]) cat.subcategories[subId].active = cat.subcategories[subId].active !== false ? false : true; await saveAll(); };
+    window.deleteSubcategory = async (catId, subId) => { if(confirm("سيتم حذف جميع منتجات هذه الفئة")) { const cat = categories.find(c => c.id === catId); delete cat.subcategories[subId]; products = products.filter(p => p.subcategoryId !== subId); await saveAll(); } };
+    window.openEditSubcat = (catId, subId) => { document.getElementById(`editSubcat_${catId}_${subId}`).classList.add('open'); };
+    window.closeEditSubcat = (catId, subId) => { document.getElementById(`editSubcat_${catId}_${subId}`).classList.remove('open'); };
+    window.updateSubcategory = async (catId, subId) => {
+        const newName = document.getElementById(`editSubcatName_${catId}_${subId}`).value.trim();
+        if(!newName) return;
+        const cat = categories.find(c => c.id === catId);
+        if(cat.subcategories[subId]) {
+            cat.subcategories[subId].name = newName;
+            const fileInput = document.getElementById(`editSubcatFile_${catId}_${subId}`);
+            if(fileInput.files.length) { const url = await uploadImageToCloudinary(fileInput.files[0]); cat.subcategories[subId].image = url; }
+            await saveAll();
+            closeEditSubcat(catId, subId);
+            showToast("تم تعديل الفئة");
+        }
+    };
+    
+    // ==================== Product Functions ====================
+    window.toggleProduct = async (id) => { const prod = products.find(p=>p.id===id); prod.active = !prod.active; await saveAll(); };
+    window.deleteProduct = async (id) => { products = products.filter(p=>p.id!==id); await saveAll(); };
+    window.openEditProduct = (id) => { document.getElementById(`editProduct_${id}`).classList.add('open'); };
+    window.updateProductImage = async (id) => { if(!tempEditProductFile[id]) return showToast("اختر صورة",true); const url = await uploadImageToCloudinary(tempEditProductFile[id]); const prod = products.find(p=>p.id===id); prod.image = url; await saveAll(); delete tempEditProductFile[id]; showToast("تم تحديث الصورة"); };
+    window.updateProductData = async (id) => { const prod = products.find(p=>p.id===id); prod.name = document.getElementById(`editName_${id}`).value; prod.price = document.getElementById(`editPrice_${id}`).value; prod.oldprice = document.getElementById(`editOld_${id}`).value; prod.desc = document.getElementById(`editDesc_${id}`).value; let nc = document.getElementById(`editCode_${id}`).value.trim(); if(nc) prod.code = nc; await saveAll(); document.getElementById(`editProduct_${id}`).classList.remove('open'); showToast("تم تعديل المنتج"); };
+    
+    // ==================== Ad Functions ====================
+    window.toggleAd = async (id) => { if (currentUserRole !== 'super') return; const ad = ads.find(a=>a.id===id); ad.active = !ad.active; await saveAll(); };
+    window.deleteAd = async (id) => { if (currentUserRole !== 'super') return; ads = ads.filter(a=>a.id!==id); await saveAll(); };
+    
+    // ==================== Coupon Functions ====================
+    window.toggleCoupon = async (id) => { const coupon = coupons.find(c=>c.id===id); coupon.active = coupon.active !== false ? false : true; await saveAll(); renderCoupons(); };
+    window.deleteCoupon = async (id) => { coupons = coupons.filter(c=>c.id!==id); await saveAll(); renderCoupons(); };
+    
+    // ==================== Order Functions ====================
+    window.deleteOrder = async (id) => { if(confirm("هل تريد حذف هذا الطلب؟")){ orders = orders.filter(o=>o.id!==id); await db.ref('orders').set(orders.reduce((acc,o)=>(acc[o.id]=o,acc),{})); renderOrders(); showToast("تم حذف الطلب"); } };
+
+window.verifyPayment = async (id) => {
+    const order = orders.find(o => o.id === id);
+    if (order) {
+        order.paymentStatus = 'verified';
+        await db.ref(`orders/${id}/paymentStatus`).set('verified');
+        renderOrders();
+        showToast('✅ تم التحقق من الدفع');
+    }
+};
+
+window.rejectPayment = async (id) => {
+    const order = orders.find(o => o.id === id);
+    if (order) {
+        order.paymentStatus = 'rejected';
+        await db.ref(`orders/${id}/paymentStatus`).set('rejected');
+        renderOrders();
+        showToast('❌ تم رفض الدفع');
+    }
+};
+
+// Show receipt image in full size modal
+window.showReceiptImage = function(imageData) {
+    const existingModal = document.getElementById('receiptImageModal');
+    if (existingModal) existingModal.remove();
+
+    const modalHTML = `
+        <div id="receiptImageModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;" onclick="this.remove()">
+            <div style="position:relative; max-width:90vw; max-height:90vh;">
+                <img src="${imageData}" style="max-width:90vw; max-height:90vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+                <button style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('receiptImageModal').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+
+    const modal = document.getElementById('receiptImageModal');
+    modal.addEventListener('click', () => {
+        modal.remove();
+        document.body.style.overflow = '';
+    });
+};
+    
+    // ==================== Add Functions ====================
+    document.getElementById('addCategoryBtn').onclick = async () => {
+        const name = document.getElementById('newCatName').value.trim();
+        const fileInput = document.getElementById('newCatImageFile');
+        if(!name) return showToast("اسم القسم مطلوب", true);
+        if(!fileInput.files.length) return showToast("صورة القسم مطلوبة", true);
+        let order = parseInt(document.getElementById('newCatOrder').value) - 1;
+        try {
+            const url = await uploadImageToCloudinary(fileInput.files[0]);
+            const newId = Date.now().toString();
+            categories.push({ id: newId, name, image: url, active: true, order: order, subcategories: {} });
+            categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+            await saveAll();
+            document.getElementById('newCatName').value = '';
+            document.getElementById('newCatOrder').value = '1';
+            fileInput.value = '';
+            document.getElementById('newCatFileName').innerHTML = '📁 لم يتم اختيار ملف';
+            showToast("تمت إضافة القسم");
+        } catch(err) { showToast(err.message, true); }
+    };
+    document.getElementById('newCatImageFile').onchange = (e) => { document.getElementById('newCatFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`; };
+    
+    document.getElementById('addSubcategoryBtn').onclick = async () => {
+        const name = document.getElementById('newSubcatName').value.trim();
+        const catId = document.getElementById('newSubcatCategory').value;
+        if(!name) return showToast("اسم الفئة مطلوب", true);
+        if(!catId) return showToast("اختر القسم", true);
+        const fileInput = document.getElementById('newSubcatImageFile');
+        let imageUrl = '';
+        if(fileInput.files.length) imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
+        const cat = categories.find(c => c.id === catId);
+        if(!cat.subcategories) cat.subcategories = {};
+        const newSubId = Date.now().toString();
+        cat.subcategories[newSubId] = { id: newSubId, name: name, image: imageUrl, active: true };
+        await saveAll();
+        document.getElementById('newSubcatName').value = '';
+        document.getElementById('newSubcatCategory').value = '';
+        fileInput.value = '';
+        document.getElementById('newSubcatFileName').innerHTML = '📁 لم يتم اختيار ملف';
+        showToast("تمت إضافة الفئة");
+    };
+    document.getElementById('newSubcatImageFile').onchange = (e) => { document.getElementById('newSubcatFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`; };
+    
+    function updateSizesDisplay() { const container = document.getElementById('sizesContainer'); container.innerHTML = tempSizes.map(s => `<span class="size-tag">${s} <button class="remove-tag" onclick="removeSize('${s}')">✖</button></span>`).join(''); }
+    function updateColorsDisplay() { const container = document.getElementById('colorsContainer'); container.innerHTML = tempColors.map(c => `<span class="size-tag">${c} <button class="remove-tag" onclick="removeColor('${c}')">✖</button></span>`).join(''); }
+    window.addSize = () => { const select = document.getElementById('sizeSelect'); const size = select.value; if(!size || tempSizes.includes(size)) return; tempSizes.push(size); updateSizesDisplay(); select.value = ""; };
+    window.removeSize = (size) => { tempSizes = tempSizes.filter(s => s !== size); updateSizesDisplay(); };
+    window.addColor = () => { const input = document.getElementById('colorInput'); const color = input.value.trim(); if(!color || tempColors.includes(color)) return; tempColors.push(color); updateColorsDisplay(); input.value = ""; };
+    window.removeColor = (color) => { tempColors = tempColors.filter(c => c !== color); updateColorsDisplay(); };
+    
+    document.getElementById('addProductBtn').onclick = async () => {
+        const name = document.getElementById('prodName').value.trim();
+        const price = document.getElementById('prodPrice').value.trim();
+        const categoryId = document.getElementById('prodCategory').value;
+        const subcategoryId = document.getElementById('prodSubcategory').value;
+        const fileInput = document.getElementById('prodImageFile');
+        if(!name || !price) return showToast("الاسم والسعر مطلوبان", true);
+        if(!categoryId) return showToast("اختر القسم", true);
+        if(!subcategoryId) return showToast("اختر الفئة", true);
+        if(!fileInput.files.length) return showToast("صورة المنتج مطلوبة", true);
+        const oldprice = document.getElementById('prodOld').value.trim();
+        const desc = document.getElementById('prodDesc').value.trim();
+        let code = document.getElementById('prodCode').value.trim();
+        if(!code) code = generateProductCode();
+        const sizes = [...tempSizes];
+        const colors = [...tempColors];
+        const loader = document.getElementById('productLoader');
+        loader.style.display = 'block';
+        try {
+            const imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
+            const newProduct = { id: Date.now().toString(), name, price, oldprice, desc, image: imageUrl, categoryId, subcategoryId, active: true, code, sizes, colors, createdAt: Date.now() };
+            products.push(newProduct);
+            await saveAll();
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodOld').value = '';
+            document.getElementById('prodDesc').value = '';
+            document.getElementById('prodCode').value = '';
+            document.getElementById('prodCategory').value = '';
+            document.getElementById('prodSubcategory').value = '';
+            fileInput.value = '';
+            document.getElementById('prodFileName').innerHTML = '📷 لم يتم اختيار ملف';
+            tempSizes = []; tempColors = [];
+            updateSizesDisplay(); updateColorsDisplay();
+            showToast("✅ تمت إضافة المنتج");
+        } catch(err) { showToast("خطأ: "+err.message, true); }
+        loader.style.display = 'none';
+    };
+    document.getElementById('prodImageFile').onchange = (e) => { document.getElementById('prodFileName').innerHTML = `📷 ${e.target.files[0]?.name || ''}`; };
+    
+    // ==================== إضافة كوبون جديد - مع التأكد من أن usageLimit رقم صحيح ====================
+    document.getElementById('addCouponBtn').onclick = async () => {
+        const code = document.getElementById('couponCode').value.trim().toUpperCase();
+        const type = document.getElementById('couponType').value;
+        const value = parseFloat(document.getElementById('couponValue').value);
+        const minAmount = document.getElementById('couponMinAmount').value.trim();
+        const expiryDate = document.getElementById('couponExpiry').value;
+        let usageLimit = document.getElementById('couponUsageLimit').value.trim();
+        
+        if(!code) return showToast("كود الخصم مطلوب", true);
+        if(isNaN(value) || value <= 0) return showToast("قيمة الخصم مطلوبة", true);
+        if(coupons.some(c => c.code === code)) return showToast("هذا الكود موجود بالفعل", true);
+        
+        let usageLimitNum = null;
+        if (usageLimit && usageLimit !== '') {
+            usageLimitNum = parseInt(usageLimit, 10);
+            if (isNaN(usageLimitNum)) usageLimitNum = null;
+        }
+        
+        const newCoupon = { 
+            id: Date.now().toString(), 
+            code: code, 
+            type: type, 
+            value: value, 
+            minAmount: minAmount ? parseFloat(minAmount) : null, 
+            expiryDate: expiryDate ? new Date(expiryDate).getTime() : null, 
+            usageLimit: usageLimitNum,
+            usedCount: 0, 
+            active: true 
+        };
+        
+        coupons.push(newCoupon);
+        await saveAll();
+        
+        document.getElementById('couponCode').value = '';
+        document.getElementById('couponValue').value = '';
+        document.getElementById('couponMinAmount').value = '';
+        document.getElementById('couponExpiry').value = '';
+        document.getElementById('couponUsageLimit').value = '';
+        showToast("تمت إضافة كوبون الخصم");
+    };
+    
+    document.getElementById('addAdBtn').onclick = async () => {
+        if (currentUserRole !== 'super') return showToast("غير مصرح لك", true);
+        const fileInput = document.getElementById('newAdImageFile');
+        if(!fileInput.files.length) return showToast("اختر صورة للإعلان", true);
+        const text = document.getElementById('newAdText').value;
+        try {
+            const url = await uploadImageToCloudinary(fileInput.files[0]);
+            ads.unshift({ id: Date.now().toString(), image: url, text: text || '', active: true });
+            await saveAll();
+            fileInput.value = '';
+            document.getElementById('newAdFileName').innerHTML = '📁 لم يتم اختيار ملف';
+            document.getElementById('newAdText').value = '';
+            showToast("تمت إضافة الإعلان");
+        } catch(err) { showToast(err.message, true); }
+    };
+    document.getElementById('newAdImageFile').onchange = (e) => { document.getElementById('newAdFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`; };
+    
+    function updateCategorySelects() {
+        const catSelect = document.getElementById('prodCategory');
+        const newSubcatCatSelect = document.getElementById('newSubcatCategory');
+        if(catSelect) catSelect.innerHTML = '<option value="">اختر القسم</option>' + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        if(newSubcatCatSelect) newSubcatCatSelect.innerHTML = '<option value="">اختر القسم</option>' + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    document.getElementById('prodCategory')?.addEventListener('change', () => {
+        const catSelect = document.getElementById('prodCategory');
+        const subcatSelect = document.getElementById('prodSubcategory');
+        const selectedCat = catSelect.value;
+        if(selectedCat) { const cat = categories.find(c => c.id === selectedCat); const subcats = cat?.subcategories || {}; subcatSelect.innerHTML = '<option value="">اختر الفئة</option>' + Object.keys(subcats).map(subId => `<option value="${subId}">${subcats[subId].name}</option>`).join(''); }
+        else { subcatSelect.innerHTML = '<option value="">اختر الفئة أولاً</option>'; }
+    });
+    
+    async function saveAll() {
+        try {
+            if (currentUserRole === 'super') { const adsObj = {}; ads.forEach(a => { adsObj[a.id] = { image: a.image, text: a.text, active: a.active }; }); await db.ref('ads').set(adsObj); }
+            const catsObj = {}; categories.forEach(c => { catsObj[c.id] = { name: c.name, image: c.image, active: c.active, order: (c.order !== undefined ? c.order : 0), subcategories: c.subcategories || {} }; }); await db.ref('categories').set(catsObj);
+            const prodsObj = {}; products.forEach(p => { prodsObj[p.id] = { name: p.name, price: p.price, oldprice: p.oldprice || '', desc: p.desc || '', image: p.image, categoryId: p.categoryId, subcategoryId: p.subcategoryId || '', code: p.code || generateProductCode(), sizes: p.sizes || [], colors: p.colors || [], active: p.active, createdAt: p.createdAt || null }; }); await db.ref('products').set(prodsObj);
+            const couponsObj = {}; coupons.forEach(c => { couponsObj[c.id] = { code: c.code, type: c.type, value: c.value, minAmount: c.minAmount || null, expiryDate: c.expiryDate || null, usageLimit: c.usageLimit !== undefined ? c.usageLimit : null, usedCount: c.usedCount || 0, active: c.active !== false }; }); await db.ref('coupons').set(couponsObj);
+            const ordersObj = {}; orders.forEach(o => { ordersObj[o.id] = o; }); await db.ref('orders').set(ordersObj);
+            renderAll();
+        } catch (err) { console.error(err); showToast("حفظ البيانات فشل: "+err.message, true); }
+    }
+    
+    async function loadData() {
+        try {
+            const [adsSnap, catSnap, prodSnap, couponsSnap, ordersSnap] = await Promise.all([
+                db.ref('ads').once('value'),
+                db.ref('categories').once('value'),
+                db.ref('products').once('value'),
+                db.ref('coupons').once('value'),
+                db.ref('orders').once('value')
+            ]);
+            ads = adsSnap.val() ? Object.keys(adsSnap.val()).map(k=>({id:k, ...adsSnap.val()[k]})) : [];
+            categories = catSnap.val() ? Object.keys(catSnap.val()).map(k=>({id:k, ...catSnap.val()[k]})) : [];
+            products = prodSnap.val() ? Object.keys(prodSnap.val()).map(k=>({id:k, ...prodSnap.val()[k]})) : [];
+            coupons = couponsSnap.val() ? Object.keys(couponsSnap.val()).map(k=>({id:k, ...couponsSnap.val()[k]})) : [];
+            orders = ordersSnap.val() ? Object.keys(ordersSnap.val()).map(k=>({id:k, ...ordersSnap.val()[k]})) : [];
+            categories.forEach((c, idx) => { if (c.order === undefined) c.order = idx; if (!c.subcategories) c.subcategories = {}; });
+            categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+            updateCategorySelects();
+            renderAll();
+            
+            // إعداد المستمعات للتحديث التلقائي
+            setupRealtimeListeners();
+            
+            document.getElementById('searchProducts')?.addEventListener('input', (e) => { lastSearchText = e.target.value; renderProducts(); });
+            document.getElementById('searchOrders')?.addEventListener('input', (e) => { lastOrderSearchText = e.target.value; renderOrders(); });
+        } catch(err) { console.error(err); showToast("خطأ في تحميل البيانات", true); }
+    }
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`tab${btn.dataset.tab.charAt(0).toUpperCase() + btn.dataset.tab.slice(1)}`).classList.add('active');
+            if(btn.dataset.tab === 'products' || btn.dataset.tab === 'subcategories') updateCategorySelects();
+            if(btn.dataset.tab === 'orders') renderOrders();
+            if(btn.dataset.tab === 'coupons') renderCoupons();
+        });
+    });
+    
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) { window.location.href = 'viola-access-cp0596lu.html'; return; }
+        try {
+            const roleSnap = await db.ref(`admins/${user.uid}/role`).once('value');
+            const role = roleSnap.val();
+            if (role === 'super') { currentUserRole = 'super'; }
+            else { currentUserRole = 'admin'; document.querySelector('.tab-btn[data-tab="ads"]').style.display = 'none'; }
+            await loadData();
+            await loadSettings();
+        } catch (err) { currentUserRole = 'admin'; await loadData(); }
+    });
+    document.getElementById('logoutBtn').onclick = () => auth.signOut().then(() => window.location.href = 'viola-access-cp0596lu.html');
+    
+    window.tempSizes = {};
+    window.tempColors = {};
+</script>
+
+<script>
+function clearAdminSearch(inputId, btnId) {
+    var input = document.getElementById(inputId);
+    var btn = document.getElementById(btnId);
+    if (input) {
+        input.value = '';
+        input.focus();
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (btn) btn.style.display = 'none';
+}
+
+function initAdminClearButtons() {
+    var inputs = [
+        { input: 'searchOrders', btn: 'clearSearchOrders' },
+        { input: 'searchProducts', btn: 'clearSearchProducts' }
+    ];
+    inputs.forEach(function(item) {
+        var input = document.getElementById(item.input);
+        var btn = document.getElementById(item.btn);
+        if (input && btn) {
+            input.addEventListener('input', function() {
+                btn.style.display = input.value.trim().length > 0 ? 'flex' : 'none';
+            });
+            input.addEventListener('keyup', function() {
+                btn.style.display = input.value.trim().length > 0 ? 'flex' : 'none';
+            });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initAdminClearButtons);
+
+    // ==================== إعدادات التغليف والباركود ====================
+    let giftBoxSettings = { threshold: 0, message: '' };
+    let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
+
+    async function loadSettings() {
+        try {
+            // Try to load from localStorage first (fallback if Firebase fails)
+            const localGift = localStorage.getItem('viola_giftBoxSettings');
+            const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
+
+            if (localGift) {
+                try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
+            }
+            if (localBarcode) {
+                try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
+            }
+
+            // Try Firebase (if permissions allow)
+            try {
+                const [giftSnap, barcodeSnap] = await Promise.all([
+                    db.ref('settings/giftBox').once('value'),
+                    db.ref('settings/paymentBarcode').once('value')
+                ]);
+                if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+                if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
+            } catch(fbErr) {
+                console.log('Firebase settings load failed, using localStorage:', fbErr.message);
+            }
+
+            // Update UI
+            document.getElementById('giftBoxThreshold').value = giftBoxSettings.threshold || '';
+            document.getElementById('giftBoxMessage').value = giftBoxSettings.message || '';
+            document.getElementById('previewGiftThreshold').textContent = (giftBoxSettings.threshold || 0) + ' $';
+
+            document.getElementById('paymentBarcodeEnabled').value = paymentBarcodeSettings.enabled ? 'true' : 'false';
+            document.getElementById('paymentBarcodeTitle').value = paymentBarcodeSettings.title || '';
+            document.getElementById('paymentBarcodeDesc').value = paymentBarcodeSettings.description || '';
+            document.getElementById('previewBarcodeStatus').textContent = paymentBarcodeSettings.enabled ? 'مفعل ✅' : 'معطل ❌';
+            document.getElementById('previewBarcodeStatus').style.color = paymentBarcodeSettings.enabled ? '#2ed573' : '#ff4757';
+
+            if (paymentBarcodeSettings.image) {
+                document.getElementById('paymentBarcodeImg').src = paymentBarcodeSettings.image;
+                document.getElementById('paymentBarcodePreview').style.display = 'block';
+                document.getElementById('previewBarcodeImage').src = paymentBarcodeSettings.image;
+                document.getElementById('previewBarcodeImg').style.display = 'block';
+            }
+        } catch(err) { console.error('Error loading settings:', err); }
+    }
+
+    async function saveSettingsToFirebase() {
+        try {
+            await db.ref('settings/giftBox').set(giftBoxSettings);
+            await db.ref('settings/paymentBarcode').set(paymentBarcodeSettings);
+            showToast('✅ تم الحفظ في Firebase');
+        } catch(fbErr) {
+            console.log('Firebase save failed, saved locally only:', fbErr.message);
+            showToast('⚠️ تم الحفظ محلياً فقط (Firebase permissions)');
+        }
+    }
+
+    document.getElementById('saveGiftSettingsBtn').onclick = async () => {
+        const threshold = parseFloat(document.getElementById('giftBoxThreshold').value) || 0;
+        const message = document.getElementById('giftBoxMessage').value.trim() || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
+
+        giftBoxSettings = { threshold, message };
+        localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
+
+        document.getElementById('previewGiftThreshold').textContent = threshold + ' $';
+        await saveSettingsToFirebase();
+    };
+
+    document.getElementById('savePaymentBarcodeBtn').onclick = async () => {
+        const enabled = document.getElementById('paymentBarcodeEnabled').value === 'true';
+        const title = document.getElementById('paymentBarcodeTitle').value.trim();
+        const description = document.getElementById('paymentBarcodeDesc').value.trim();
+        let imageUrl = paymentBarcodeSettings.image || '';
+
+        const fileInput = document.getElementById('paymentBarcodeFile');
+        if (fileInput.files.length) {
+            try {
+                imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
+            } catch(err) { showToast('خطأ في رفع الصورة', true); return; }
+        }
+
+        paymentBarcodeSettings = { enabled, title, description, image: imageUrl };
+        localStorage.setItem('viola_paymentBarcodeSettings', JSON.stringify(paymentBarcodeSettings));
+
+        document.getElementById('previewBarcodeStatus').textContent = enabled ? 'مفعل ✅' : 'معطل ❌';
+        document.getElementById('previewBarcodeStatus').style.color = enabled ? '#2ed573' : '#ff4757';
+        if (imageUrl) {
+            document.getElementById('paymentBarcodeImg').src = imageUrl;
+            document.getElementById('paymentBarcodePreview').style.display = 'block';
+            document.getElementById('previewBarcodeImage').src = imageUrl;
+            document.getElementById('previewBarcodeImg').style.display = 'block';
+        }
+
+        await saveSettingsToFirebase();
+    };
+
+    document.getElementById('paymentBarcodeFile').onchange = (e) => {
+        document.getElementById('paymentBarcodeFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`;
+    };
+
+</script>
+
+</body>
+</html>
