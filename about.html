@@ -24,10 +24,241 @@
         .breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-light); }
         .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
         .breadcrumb i { font-size: 0.7rem; }
+
+                        /* Invoice Preview Modal Styles */
+        .invoice-preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s;
+            padding: 16px;
+        }
+        .invoice-preview-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .invoice-preview-content {
+            background: white;
+            border-radius: 28px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            direction: rtl;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f8bbd9;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .invoice-header h2 {
+            color: #e91e63;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        .close-invoice {
+            background: #fce4ec;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #e91e63;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .close-invoice:hover {
+            background: #e91e63;
+            color: white;
+        }
+        .invoice-info {
+            background: #fff0f5;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .invoice-info p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            color: #4a1a3a;
+        }
+        .invoice-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+            border-radius: 16px;
+            border: 1px solid #f8bbd9;
+            background: white;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 520px;
+        }
+        .invoice-table thead {
+            background: #fce4ec;
+        }
+        .invoice-table th, .invoice-table td {
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            border: 1px solid #f8bbd9;
+            vertical-align: middle;
+        }
+        .invoice-table th {
+            color: #e91e63;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .invoice-table tbody tr:last-child td {
+            border-bottom: 1px solid #f8bbd9;
+        }
+        .invoice-table td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #f8bbd9;
+            display: block;
+            margin: 0 auto;
+        }
+        .invoice-table .product-name {
+            font-weight: 600;
+            color: #4a1a3a;
+            font-size: 0.85rem;
+        }
+        .invoice-table .product-name small {
+            display: block;
+            color: #e91e63;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        .invoice-totals {
+            background: #fce4ec;
+            padding: 15px;
+            border-radius: 20px;
+            text-align: left;
+        }
+        .invoice-totals p {
+            margin: 5px 0;
+            font-weight: bold;
+            color: #4a1a3a;
+            font-size: 0.95rem;
+        }
+        .print-btn {
+            background: linear-gradient(135deg, #e91e63, #f06292);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(233,30,99,0.3);
+        }
+        @media (max-width: 768px) {
+            .invoice-preview-content {
+                width: 95%;
+                padding: 12px;
+                border-radius: 20px;
+            }
+            .invoice-header h2 {
+                font-size: 1.2rem;
+            }
+            .invoice-info p {
+                font-size: 0.8rem;
+            }
+            .invoice-table-wrapper {
+                border-radius: 12px;
+            }
+            .invoice-table {
+                min-width: 480px;
+            }
+            .invoice-table th, .invoice-table td {
+                padding: 6px 4px;
+                font-size: 0.7rem;
+            }
+            .invoice-table td img {
+                width: 35px;
+                height: 35px;
+            }
+            .invoice-table .product-name {
+                font-size: 0.75rem;
+            }
+            .invoice-table .product-name small {
+                font-size: 0.65rem;
+            }
+            .invoice-totals {
+                padding: 12px;
+                border-radius: 16px;
+            }
+            .invoice-totals p {
+                font-size: 0.85rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .invoice-table th, .invoice-table td {
+                padding: 4px 3px;
+                font-size: 0.65rem;
+            }
+            .invoice-table td img {
+                width: 30px;
+                height: 30px;
+            }
+            .invoice-table .product-name {
+                font-size: 0.7rem;
+            }
+            .invoice-table .product-name small {
+                font-size: 0.6rem;
+            }
+        }
+        @media print {
+            .invoice-preview-modal, .close-invoice, .print-btn {
+                display: none;
+            }
+            .invoice-preview-content {
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .invoice-table-wrapper {
+                border: none;
+                overflow: visible;
+            }
+        }
     </style>
 </head>
 <body class="no-splash">
-    <!-- Header -->
+    <!-- Header (نفس الموجود) -->
     <header class="main-header">
         <div class="header-content container">
             <a href="index.html" class="logo">
@@ -97,16 +328,14 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer (نفس الموجود) -->
     <footer class="main-footer">
         <div class="container footer-grid">
             <div class="footer-col">
                 <div class="footer-logo"><img src="logo-viola.jpg" alt="ڤيولا" class="footer-logo-img"><h3>ڤيولا</h3></div>
                 <p>وجهتك الأولى للأناقة والجمال. نقدم لكِ أجود المنتجات بأفضل الأسعار مع تجربة تسوق سلسة وممتعة.</p>
-                <div class="social-links">
-                    <a href="https://wa.me/qr/Z2J5ZSQYIJDLF1" target="_blank"><i class="fab fa-whatsapp"></i></a>
-                    <a href="https://www.instagram.com/viola_style.0?igsh=MXZ3cGdsZjRqcDhicA==" target="_blank"><i class="fab fa-instagram"></i></a>
-                </div>
+                <div class="social-links"><a href="https://wa.me/qr/Z2J5ZSQYIJDLF1" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                    <a href="https://www.instagram.com/viola_style.0?igsh=MXZ3cGdsZjRqcDhicA==" target="_blank"><i class="fab fa-instagram"></i></a></div>
             </div>
             <div class="footer-col">
                 <h4>روابط سريعة</h4>
@@ -128,10 +357,8 @@
         <div class="designer-credit">
             <div class="container">
                 <p> تم التصميم بواسطة <strong>أحمد كلاوي</strong> | Ahmad Kllawe <i class="far fa-copyright"></i> 2026 </p>
-                <div class="designer-links">
-                    <a href="https://wa.me/qr/HJITW5TPSVDOH1" target="_blank"><i class="fab fa-whatsapp"></i> واتساب</a>
-                    <a href="https://www.instagram.com/ahmad.kllawe?igsh=MTdzbmN3YW8zempvNw==" target="_blank"><i class="fab fa-instagram"></i> إنستغرام</a>
-                </div>
+                <div class="designer-links"><a href="https://wa.me/qr/HJITW5TPSVDOH1" target="_blank"><i class="fab fa-whatsapp"></i> واتساب</a>
+                    <a href="https://www.instagram.com/ahmad.kllawe?igsh=MTdzbmN3YW8zempvNw==" target="_blank"><i class="fab fa-instagram"></i> إنستغرام</a></div>
             </div>
         </div>
     </footer>
@@ -143,44 +370,18 @@
         <a href="#" class="bottom-nav-item" id="bottomContactBtn"><i class="fas fa-headset"></i><span>تواصل معنا</span></a>
     </div>
 
-    <!-- Cart Sidebar -->
+    <!-- Cart Sidebar & Modals (نفس الهيكل) -->
     <div class="cart-overlay" id="cartOverlay"></div>
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3><i class="fas fa-shopping-bag"></i> سلة المشتريات</h3>
-            <button class="close-cart" id="closeCart"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="cart-items" id="cartItems"></div>
-        <div class="cart-empty" id="cartEmpty">
-            <i class="fas fa-shopping-basket"></i>
-            <p>سلة المشتريات فارغة</p>
-            <span>أضيفي بعض المنتجات الجميلة!</span>
-        </div>
-        <div class="cart-footer" id="cartFooter">
-            <div class="cart-total"><span>المجموع:</span><span class="total-price" id="totalPrice">0 $</span></div>
-            <button class="checkout-btn" id="checkoutBtn"><i class="fas fa-check-circle"></i> تأكيد الطلب</button>
-        </div>
-    </div>
+    <div class="cart-sidebar" id="cartSidebar"><div class="cart-header"><h3><i class="fas fa-shopping-bag"></i> سلة المشتريات</h3><button class="close-cart" id="closeCart"><i class="fas fa-times"></i></button></div><div class="cart-items" id="cartItems"></div><div class="cart-empty" id="cartEmpty"><i class="fas fa-shopping-basket"></i><p>سلة المشتريات فارغة</p><span>أضيفي بعض المنتجات الجميلة!</span></div><div class="cart-footer" id="cartFooter"><div class="cart-total"><span>المجموع:</span><span class="total-price" id="totalPrice">0 $</span></div><button class="checkout-btn" id="checkoutBtn"><i class="fas fa-check-circle"></i> تأكيد الطلب</button></div></div>
 
-    <!-- Order Modal -->
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="order-modal" id="orderModal">
-        <div class="modal-header">
-            <h3><i class="fas fa-clipboard-list"></i> تفاصيل الطلب</h3>
-            <button class="close-modal" id="closeModal"><i class="fas fa-times"></i></button>
-        </div>
+        <div class="modal-header"><h3><i class="fas fa-clipboard-list"></i> تفاصيل الطلب</h3><button class="close-modal" id="closeModal"><i class="fas fa-times"></i></button></div>
         <div class="modal-body">
             <form id="orderForm">
-                <div class="form-group">
-                    <label><i class="fas fa-user"></i> الاسم الكامل</label>
-                    <input type="text" id="fullName" placeholder="أدخلي اسمك الكامل" required>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-phone"></i> رقم الهاتف</label>
-                    <input type="tel" id="phone" placeholder="أدخلي رقم الهاتف" required>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-map-marker-alt"></i> المدينة</label>
+                <div class="form-group"><label><i class="fas fa-user"></i> الاسم الكامل</label><input type="text" id="fullName" placeholder="أدخلي اسمك الكامل" required></div>
+                <div class="form-group"><label><i class="fas fa-phone"></i> رقم الهاتف</label><input type="tel" id="phone" placeholder="أدخلي رقم الهاتف" required></div>
+                <div class="form-group"><label><i class="fas fa-map-marker-alt"></i> المدينة</label>
                     <select id="city" required>
                         <option value="">اختر المدينة</option>
                         <option value="دمشق">دمشق</option>
@@ -199,14 +400,8 @@
                         <option value="other">أخرى</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label><i class="fas fa-home"></i> العنوان التفصيلي</label>
-                    <textarea id="address" rows="3" placeholder="أدخلي العنوان بالتفصيل (الحي، الشارع، رقم المنزل...)" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-sticky-note"></i> ملاحظات (اختياري)</label>
-                    <textarea id="notes" rows="2" placeholder="أي ملاحظات خاصة بالطلب..."></textarea>
-                </div>
+                <div class="form-group"><label><i class="fas fa-home"></i> العنوان التفصيلي</label><textarea id="address" rows="3" placeholder="أدخلي العنوان بالتفصيل..." required></textarea></div>
+                <div class="form-group"><label><i class="fas fa-sticky-note"></i> ملاحظات (اختياري)</label><textarea id="notes" rows="2" placeholder="أي ملاحظات خاصة بالطلب..."></textarea></div>
                 <div class="order-summary">
                     <h4><i class="fas fa-receipt"></i> ملخص الطلب</h4>
                     <div class="summary-row"><span>عدد المنتجات:</span><span id="orderItemCount">0</span></div>
@@ -222,60 +417,33 @@
                     <i class="fas fa-info-circle"></i>
                     <p><strong>ملاحظة:</strong> بعد تأكيد الطلب، ستنتقلين لخطوة الدفع لإرفاق وصل التحويل.</p>
                 </div>
-                <button type="submit" class="submit-order-btn">
-                    <i class="fas fa-arrow-left"></i> متابعة للدفع
-                </button>
+                <button type="submit" class="submit-order-btn"><i class="fas fa-arrow-left"></i> متابعة للدفع</button>
             </form>
         </div>
     </div>
 
-    <!-- Success Modal -->
-    <div class="success-modal" id="successModal">
-        <div class="success-content">
-            <div class="success-icon"><i class="fas fa-check-circle"></i></div>
-            <h3>تم إرسال طلبك بنجاح! 🎉</h3>
-            <p>سنقوم بالتواصل معكِ قريباً لتأكيد الطلب وإرسال تفاصيل الدفع.</p>
-            <div class="success-details">
-                <p><i class="fas fa-clock"></i> وقت الطلب: <span id="orderTime"></span></p>
-                <p><i class="fas fa-phone"></i> سنتواصل معكِ على: <span id="orderPhone"></span></p>
-            </div>
-            <button class="success-btn" id="successBtn"><i class="fas fa-shopping-bag"></i> مواصلة التسوق</button>
-        </div>
-    </div>
+    <div class="success-modal" id="successModal"><div class="success-content"><div class="success-icon"><i class="fas fa-check-circle"></i></div><h3>تم إرسال طلبك بنجاح! 🎉</h3><p>سنقوم بالتواصل معكِ قريباً لتأكيد الطلب وإرسال تفاصيل الدفع.</p><div class="success-details"><p><i class="fas fa-clock"></i> وقت الطلب: <span id="orderTime"></span></p><p><i class="fas fa-phone"></i> سنتواصل معكِ على: <span id="orderPhone"></span></p></div><button class="success-btn" id="successBtn"><i class="fas fa-shopping-bag"></i> مواصلة التسوق</button></div></div>
 
-    <!-- Toast -->
     <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMessage">تمت الإضافة إلى السلة!</span></div>
+    <div class="quick-view-modal" id="quickViewModal"><div class="quick-view-content"><button class="close-quick-view" id="closeQuickView"><i class="fas fa-times"></i></button><div class="quick-view-body" id="quickViewBody"></div></div></div>
 
-    <!-- Quick View Modal -->
-    <div class="quick-view-modal" id="quickViewModal">
-        <div class="quick-view-content">
-            <button class="close-quick-view" id="closeQuickView"><i class="fas fa-times"></i></button>
-            <div class="quick-view-body" id="quickViewBody"></div>
-        </div>
-    </div>
-
-    <!-- Contact Modal -->
     <div class="modal-overlay" id="contactModalOverlay"></div>
     <div class="order-modal" id="contactModal">
-        <div class="modal-header">
-            <h3><i class="fas fa-headset"></i> تواصل معنا</h3>
-            <button class="close-modal" id="closeContactModal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body" style="text-align: center;">
-            <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px;">
-                <a href="https://wa.me/966500000000" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; background: #25D366; color: white; padding: 16px; border-radius: 50px; text-decoration: none; font-weight: 700;"><i class="fab fa-whatsapp" style="font-size: 1.5rem;"></i> واتساب</a>
-                <a href="https://instagram.com/viola.style" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; background: linear-gradient(45deg, #f09433, #d62976, #962fbf); color: white; padding: 16px; border-radius: 50px; text-decoration: none; font-weight: 700;"><i class="fab fa-instagram" style="font-size: 1.5rem;"></i> إنستغرام</a>
-            </div>
-        </div>
+        <div class="modal-header"><h3><i class="fas fa-headset"></i> تواصل معنا</h3><button class="close-modal" id="closeContactModal"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body" style="text-align: center;"><div style="display: flex; flex-direction: column; gap: 20px; padding: 20px;"><a href="https://wa.me/966500000000" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; background: #25D366; color: white; padding: 16px; border-radius: 50px; text-decoration: none; font-weight: 700;"><i class="fab fa-whatsapp" style="font-size: 1.5rem;"></i> واتساب</a><a href="https://instagram.com/viola.style" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; background: linear-gradient(45deg, #f09433, #d62976, #962fbf); color: white; padding: 16px; border-radius: 50px; text-decoration: none; font-weight: 700;"><i class="fab fa-instagram" style="font-size: 1.5rem;"></i> إنستغرام</a></div></div>
+    </div>
+
+    <!-- Invoice Preview Modal -->
+    <div class="invoice-preview-modal" id="invoicePreviewModal">
+        <div class="invoice-preview-content" id="invoicePreviewContent"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="assets/js/script.js"></script>
-    
+    <script src="assets/js/scriptv1.js"></script>
+
     <!-- كود إضافي لتشغيل السلة في صفحة من نحن فقط -->
     <script>
-        // تأكد من وجود السلة وربط الأحداث بشكل منفصل
         document.addEventListener('DOMContentLoaded', function() {
             const cartBtn = document.getElementById('cartBtn');
             const cartSidebar = document.getElementById('cartSidebar');
@@ -283,7 +451,6 @@
             const closeCartBtn = document.getElementById('closeCart');
             
             if (cartBtn && cartSidebar && cartOverlay) {
-                // إزالة أي أحداث قديمة لتجنب التكرار
                 const newCartBtn = cartBtn.cloneNode(true);
                 cartBtn.parentNode.replaceChild(newCartBtn, cartBtn);
                 

@@ -13,15 +13,12 @@ function hideSplashScreen() {
     }
 }
 
-// Check if we should skip splash screen (when coming from footer links or internal navigation)
+// Check if we should skip splash screen
 const urlParamsSplash = new URLSearchParams(window.location.search);
 const filterParamSplash = urlParamsSplash.get('filter');
 const skipSplash = (filterParamSplash === 'products' || filterParamSplash === 'offers');
-
-// Check if user came from internal navigation (not a fresh page load)
 const isInternalNav = document.referrer && document.referrer.includes(window.location.host);
 
-// Global variable to track if splash should be hidden
 window.splashDataLoaded = false;
 window.splashMinTimePassed = false;
 
@@ -122,6 +119,78 @@ console.log = function(...args) {
 };
 
 // ============================================
+// INVOICE PREVIEW FUNCTION (Responsive Table)
+// ============================================
+function showInvoicePreview(orderData) {
+    const modal = document.getElementById('invoicePreviewModal');
+    const content = document.getElementById('invoicePreviewContent');
+    if (!modal || !content) return;
+
+    const { subtotal, discount, finalTotal } = calculateTotals();
+    const discountMessage = appliedCoupon ? (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value}$`) : '';
+
+    let itemsHTML = '';
+    orderData.items.forEach((item, idx) => {
+        itemsHTML += `
+            <tr>
+                <td data-label="#"><span>${idx+1}</span></td>
+                <td data-label="الصورة"><img src="${item.image || 'https://via.placeholder.com/50'}" alt="${item.name}" style="width:45px; height:45px; object-fit:cover; border-radius:8px;"></td>
+                <td data-label="المنتج" class="product-name">${item.name}${item.selectedSize ? `<br><small>مقاس: ${item.selectedSize}</small>` : ''}${item.selectedColor ? `<br><small>لون: ${item.selectedColor}</small>` : ''}</td>
+                <td data-label="الرمز">${item.code || 'بدون رمز'}</td>
+                <td data-label="العدد">${item.qty}</td>
+                <td data-label="السعر">${formatPrice(item.price)} $</td>
+                <td data-label="الإجمالي">${formatPrice(item.price * item.qty)} $</td>
+            </tr>
+        `;
+    });
+
+    const invoiceHTML = `
+        <div style="direction:rtl; font-family:'Tajawal',sans-serif;">
+            <div class="invoice-header">
+                <h2><i class="fas fa-receipt"></i> فاتورة الطلب - ڤيولا</h2>
+                <button class="close-invoice" onclick="closeInvoicePreview()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="invoice-info">
+                <p><strong>الاسم:</strong> ${orderData.customer.fullName}</p>
+                <p><strong>الهاتف:</strong> ${orderData.customer.phone}</p>
+                <p><strong>المدينة:</strong> ${orderData.customer.city}</p>
+                <p><strong>العنوان:</strong> ${orderData.customer.address}</p>
+                ${orderData.customer.notes ? `<p><strong>ملاحظات:</strong> ${orderData.customer.notes}</p>` : ''}
+            </div>
+            <div class="invoice-table-wrapper">
+                <table class="invoice-table">
+                    <thead>
+                        <tr><th>#</th><th>الصورة</th><th>المنتج</th><th>الرمز</th><th>العدد</th><th>السعر</th><th>الإجمالي</th></tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHTML}
+                    </tbody>
+                </table>
+            </div>
+            <div class="invoice-totals">
+                <p>المجموع الفرعي: ${formatPrice(subtotal)} $</p>
+                ${discount > 0 ? `<p style="color:#2ed573;">الخصم (${discountMessage}): - ${formatPrice(discount)} $</p>` : ''}
+                <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
+                <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
+            </div>
+            <button class="print-btn" onclick="window.print();"><i class="fas fa-print"></i> طباعة / تحميل الفاتورة</button>
+        </div>
+    `;
+
+    content.innerHTML = invoiceHTML;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeInvoicePreview() {
+    const modal = document.getElementById('invoicePreviewModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// ============================================
 // CUSTOM CONFIRM MODAL - VIOLA STYLE
 // ============================================
 function showConfirmModal(options) {
@@ -203,34 +272,6 @@ let pendingOrderData = null;
 let selectedPaymentMethod = 'manual';
 let paymentReceiptBase64 = null;
 
-let giftBoxSettings = { threshold: 0, message: '' };
-let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
-
-async function loadSettings() {
-    try {
-        const localGift = localStorage.getItem('viola_giftBoxSettings');
-        const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
-
-        if (localGift) {
-            try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
-        }
-        if (localBarcode) {
-            try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
-        }
-
-        try {
-            const [giftSnap, barcodeSnap] = await Promise.all([
-                db.ref('settings/giftBox').once('value'),
-                db.ref('settings/paymentBarcode').once('value')
-            ]);
-            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
-            if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
-        } catch(fbErr) {
-            console.log('Firebase settings load failed, using localStorage:', fbErr.message);
-        }
-    } catch(err) { console.error('Error loading settings:', err); }
-}
-
 function openPaymentStep(orderData) {
     pendingOrderData = orderData;
     selectedPaymentMethod = 'manual';
@@ -247,7 +288,7 @@ function openPaymentStep(orderData) {
                 <div class="payment-step-header">
                     <button class="close-payment-step" id="closePaymentStep"><i class="fas fa-times"></i></button>
                     <h3><i class="fas fa-credit-card"></i> إتمام الدفع</h3>
-                    <p>اختاري طريقة الدفع المناسبة وأرفقي وصل التحويل</p>
+                    <p>اختري طريقة الدفع المناسبة وأرفقي وصل التحويل</p>
                 </div>
                 <div class="payment-step-body">
                     <div class="order-info-summary">
@@ -298,7 +339,6 @@ function openPaymentStep(orderData) {
                     </div>
 
                     <div id="receiptSection">
-                        <!-- Receipt upload for barcode payment -->
                         <div class="payment-receipt-section" id="barcodeReceiptSection">
                             <h4><i class="fas fa-upload"></i> إرفاق وصل الدفع</h4>
                             <p style="font-size:0.8rem; color:var(--text-medium); margin-bottom:12px;">بعد إتمام الدفع بالباركود، يرجى إرفاق صورة الوصل لإثبات التحويل</p>
@@ -312,7 +352,6 @@ function openPaymentStep(orderData) {
                             </div>
                         </div>
 
-                        <!-- Manual payment - user enters their payment method -->
                         <div class="payment-receipt-section" id="manualPaymentInfo" style="background:var(--bg-light); border:2px solid var(--border);">
                             <h4><i class="fas fa-hand-holding-usd"></i> الدفع اليدوي</h4>
                             <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:12px;">
@@ -337,6 +376,7 @@ function openPaymentStep(orderData) {
                 </div>
                 <div class="payment-step-footer">
                     <button class="confirm-btn confirm-btn-secondary" id="paymentStepBack"><i class="fas fa-arrow-right"></i> رجوع</button>
+                    <button class="confirm-btn confirm-btn-primary" id="paymentStepShowInvoice"><i class="fas fa-receipt"></i> 📄 عرض الفاتورة</button>
                     <button class="confirm-btn confirm-btn-primary" id="paymentStepSubmit"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
                 </div>
             </div>
@@ -349,7 +389,6 @@ function openPaymentStep(orderData) {
     const overlay = document.getElementById('paymentStepOverlay');
     requestAnimationFrame(() => overlay.classList.add('active'));
 
-    // تعيين الحالة الافتراضية: الدفع اليدوي وإخفاء رفع الصورة
     window.selectPaymentMethod('manual');
 
     document.getElementById('paymentStepReceiptFile').addEventListener('change', function(e) {
@@ -377,6 +416,14 @@ function openPaymentStep(orderData) {
     document.getElementById('paymentStepBack').addEventListener('click', () => {
         closePaymentStep();
         openOrderModal();
+    });
+
+    document.getElementById('paymentStepShowInvoice').addEventListener('click', () => {
+        if (pendingOrderData) {
+            showInvoicePreview(pendingOrderData);
+        } else {
+            showToast('لا توجد بيانات لعرض الفاتورة', true);
+        }
     });
 
     document.getElementById('paymentStepSubmit').addEventListener('click', async () => {
@@ -473,14 +520,11 @@ async function submitOrderWithPayment() {
             closeOrderModal();
             closeCartFn();
 
-            // ✅ تم إرسال الطلب بنجاح - Toast notification
-            showToast("✅ تم إرسال الطلب بنجاح!", false);
-
             setTimeout(() => {
                 showSuccessModal(pendingOrderData.customer.phone);
             }, 300);
 
-            orderForm?.reset();
+            if (orderForm) orderForm.reset();
             pendingOrderData = null;
         }
     });
@@ -602,6 +646,38 @@ function renderNavbar() {
 }
 
 // ============================================
+// Settings Variables
+// ============================================
+let giftBoxSettings = { threshold: 0, message: '' };
+let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
+
+async function loadSettings() {
+    try {
+        const localGift = localStorage.getItem('viola_giftBoxSettings');
+        const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
+
+        if (localGift) {
+            try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
+        }
+        if (localBarcode) {
+            try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
+        }
+
+        try {
+            const [giftSnap, barcodeSnap] = await Promise.all([
+                db.ref('settings/giftBox').once('value'),
+                db.ref('settings/paymentBarcode').once('value')
+            ]);
+            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+            if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
+        } catch(fbErr) {
+            console.log('Firebase settings load failed, using localStorage:', fbErr.message);
+        }
+        console.log('✅ Payment Barcode Settings loaded:', paymentBarcodeSettings);
+    } catch(err) { console.error('Error loading settings:', err); }
+}
+
+// ============================================
 // Load Data from Firebase (Initial Load)
 // ============================================
 async function loadData() {
@@ -669,7 +745,6 @@ async function loadData() {
                 if (productsSection) productsSection.scrollIntoView({ behavior: 'smooth' });
             }, 500);
         }
-
     } catch (err) {
         console.error("خطأ في تحميل البيانات:", err);
         showToast("خطأ في تحميل البيانات", true);
@@ -708,14 +783,14 @@ function renderHeroSlider() {
     const heroDots = document.getElementById('heroDots');
     if (!heroSlider || !heroDots) return;
     if (ads.length === 0) {
-        heroSlider.innerHTML = `<div class="hero-slide active"><img src="https://via.placeholder.com/1400x320/e91e63/ffffff?text=ڤيولا+ستايل" alt="ڤيولا" class="hero-slide-image" onerror="this.src='https://via.placeholder.com/1400x320/f48fb1/ffffff?text=VIOLA+STYLE'"></div>`;
+        heroSlider.innerHTML = `<div class="hero-slide active"><img src="https://via.placeholder.com/1400x320/e91e63/ffffff?text=ڤيولا+ستايل" alt="ڤيولا" class="hero-slide-image"></div>`;
         heroDots.innerHTML = '<span class="dot active"></span>';
         initHeroSlider();
         return;
     }
     heroSlider.innerHTML = ads.map((ad, index) => `
         <div class="hero-slide ${index === 0 ? 'active' : ''}" data-ad-id="${ad.id}">
-            <img src="${ad.image}" alt="إعلان" class="hero-slide-image" onerror="this.src='https://via.placeholder.com/1400x320/f48fb1/ffffff?text=VIOLA+STYLE'">
+            <img src="${ad.image}" alt="إعلان" class="hero-slide-image">
             <div class="hero-slide-overlay"></div>
             ${ad.text ? `<div class="hero-slide-text">${ad.text}</div>` : ''}
         </div>
@@ -769,38 +844,27 @@ function updateQty(index, change) {
 // ============================================
 function isCouponValid(coupon, subtotal) {
     if (!coupon) return false;
-    if (!coupon.active) return false;
-
-    const limit = coupon.usageLimit ? parseInt(coupon.usageLimit) : null;
-    const used = coupon.usedCount ? parseInt(coupon.usedCount) : 0;
-
-    if (limit !== null && used >= limit) return false;
+    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
     if (coupon.expiryDate && Date.now() > coupon.expiryDate) return false;
     if (coupon.minAmount && subtotal < coupon.minAmount) return false;
-
     return true;
 }
 
 function getCouponDiscount() {
     if (!appliedCoupon) return 0;
-
     const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.qty), 0);
-
     if (!isCouponValid(appliedCoupon, subtotal)) {
         appliedCoupon = null;
         saveCouponToLocal();
         return 0;
     }
-
     let discount = 0;
     const value = parseFloat(appliedCoupon.value);
-
     if (appliedCoupon.type === 'percentage') {
         discount = (subtotal * value) / 100;
     } else {
         discount = value;
     }
-
     if (discount > subtotal) discount = subtotal;
     return discount;
 }
@@ -811,7 +875,6 @@ function calculateTotals() {
     const discountMessage = appliedCoupon ? 
         (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% خصم` : `${appliedCoupon.value}$ خصم`) : '';
     const finalTotal = subtotal - discount;
-
     return { subtotal, discount, discountMessage, finalTotal };
 }
 
@@ -821,44 +884,33 @@ function applyCoupon(code) {
         showToast('❌ كود الخصم غير صالح', true);
         return false;
     }
-
     const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.qty), 0);
-
-    const limit = coupon.usageLimit ? parseInt(coupon.usageLimit) : null;
-    const used = coupon.usedCount ? parseInt(coupon.usedCount) : 0;
-
-    if (limit !== null && used >= limit) {
-        showToast(`❌ تم استخدام هذا الكود ${limit} مرة`, true);
+    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+        showToast(`❌ تم استخدام هذا الكود ${coupon.usageLimit} مرة`, true);
         return false;
     }
-
     if (coupon.expiryDate && Date.now() > coupon.expiryDate) {
         showToast('❌ انتهت صلاحية الكود', true);
         return false;
     }
-
     if (coupon.minAmount && subtotal < coupon.minAmount) {
         showToast(`❌ الحد الأدنى للطلب هو ${coupon.minAmount}$`, true);
         return false;
     }
-
     appliedCoupon = {
         id: coupon.id,
         code: coupon.code,
         type: coupon.type,
         value: coupon.value,
-        usedCount: used,
-        usageLimit: limit,
+        usedCount: coupon.usedCount || 0,
+        usageLimit: coupon.usageLimit,
         minAmount: coupon.minAmount,
-        expiryDate: coupon.expiryDate,
-        active: true
+        expiryDate: coupon.expiryDate
     };
-
     saveCouponToLocal();
     updateCartUI();
-
     const discountValue = coupon.type === 'percentage' ? `${coupon.value}%` : `${coupon.value}$`;
-    const remaining = limit !== null ? (limit - used) : 'غير محدود';
+    const remaining = coupon.usageLimit ? (coupon.usageLimit - (coupon.usedCount || 0)) : 'غير محدود';
     showToast(`✅ تم تطبيق كود ${coupon.code} (خصم ${discountValue}) - تبقى ${remaining} استخدام`);
     return true;
 }
@@ -903,15 +955,13 @@ function updateCartUI() {
             `).join('');
         }
 
-        // إزالة أي قسم كوبون قديم
+        // Remove existing coupon section
         document.querySelectorAll('.coupon-section').forEach(el => el.remove());
 
         const couponSection = document.createElement('div');
         couponSection.className = 'coupon-section';
         if (appliedCoupon) {
-            const limit = appliedCoupon.usageLimit;
-            const used = appliedCoupon.usedCount || 0;
-            const remaining = limit !== null ? (limit - used) : 'غير محدود';
+            const remaining = appliedCoupon.usageLimit ? (appliedCoupon.usageLimit - (appliedCoupon.usedCount || 0)) : 'غير محدود';
             couponSection.innerHTML = `
                 <div class="coupon-discount" style="display:flex; justify-content:space-between; margin-bottom:8px;">
                     <span>الخصم (${discountMessage}):</span>
@@ -1123,15 +1173,15 @@ function closeQuickViewFn() { if (quickViewModal) { quickViewModal.classList.rem
 // ============================================
 // Toast & Modal Functions
 // ============================================
-let toastTimeoutId = null;
+let toastTimeout = null;
 function showToast(message, isError = false) {
     if (!toast || !toastMessage) return;
-    if (toastTimeoutId) clearTimeout(toastTimeoutId);
+    if (toastTimeout) clearTimeout(toastTimeout);
     toast.classList.remove('active');
     toast.style.background = isError ? '#e91e63' : 'linear-gradient(135deg, #e91e63, #f06292)';
     toastMessage.textContent = message;
     setTimeout(() => toast.classList.add('active'), 10);
-    toastTimeoutId = setTimeout(() => { toast.classList.remove('active'); toastTimeoutId = null; }, 3000);
+    toastTimeout = setTimeout(() => { toast.classList.remove('active'); toastTimeout = null; }, 3000);
 }
 function openCart() { if (cartSidebar && cartOverlay) { cartSidebar.classList.add('active'); cartOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }
 function closeCartFn() { if (cartSidebar && cartOverlay) { cartSidebar.classList.remove('active'); cartOverlay.classList.remove('active'); document.body.style.overflow = ''; } }
@@ -1188,7 +1238,7 @@ function showSearchSuggestions(query) {
         const lower = query.toLowerCase();
         const matches = products.filter(p => p.name.toLowerCase().includes(lower) || (p.code && p.code.toLowerCase().includes(lower))).slice(0, 5);
         if (matches.length > 0) {
-            searchSuggestions.innerHTML = matches.map(p => `<div class="suggestion-item" onclick="selectSuggestionAndScroll('${p.name.replace(/'/g, "\'")}')"><i class="fas fa-search"></i><span class="suggestion-name">${p.name} ${p.code ? `(${p.code})` : ''}</span></div>`).join('');
+            searchSuggestions.innerHTML = matches.map(p => `<div class="suggestion-item" onclick="selectSuggestionAndScroll('${p.name.replace(/'/g, "\\'")}')"><i class="fas fa-search"></i><span class="suggestion-name">${p.name} ${p.code ? `(${p.code})` : ''}</span></div>`).join('');
             searchSuggestions.classList.add('active');
         } else {
             searchSuggestions.innerHTML = `<div class="suggestion-empty"><i class="fas fa-search"></i><span>لا توجد نتائج</span></div>`;
@@ -1221,13 +1271,13 @@ function initHeroSlider() {
     slides = document.querySelectorAll('.hero-slide');
     dots = document.querySelectorAll('.hero-dots .dot');
     if (slides.length === 0) return;
+    function showSlide(index) { if (!slides.length) return; slides.forEach((slide, i) => slide.classList.toggle('active', i === index)); if (dots.length) dots.forEach((dot, i) => dot.classList.toggle('active', i === index)); currentSlide = index; }
+    function nextSlide() { showSlide((currentSlide + 1) % slides.length); }
+    function startAutoSlide() { if (slideInterval) clearInterval(slideInterval); slideInterval = setInterval(nextSlide, 7000); }
+    function stopAutoSlide() { if (slideInterval) clearInterval(slideInterval); }
     showSlide(0);
     startAutoSlide();
 }
-function showSlide(index) { if (!slides.length) return; slides.forEach((slide, i) => slide.classList.toggle('active', i === index)); if (dots.length) dots.forEach((dot, i) => dot.classList.toggle('active', i === index)); currentSlide = index; }
-function nextSlide() { showSlide((currentSlide + 1) % slides.length); }
-function startAutoSlide() { if (slideInterval) clearInterval(slideInterval); slideInterval = setInterval(nextSlide, 7000); }
-function stopAutoSlide() { if (slideInterval) clearInterval(slideInterval); }
 
 // ============================================
 // Event Listeners
@@ -1249,7 +1299,7 @@ if (contactModalOverlay) contactModalOverlay.addEventListener('click', closeCont
 if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { loadMoreBtn.classList.add('loading'); setTimeout(() => { displayedCount += 4; renderProducts(currentFilter, searchInput ? searchInput.value : ''); loadMoreBtn.classList.remove('loading'); }, 600); });
 
 // ============================================
-// ORDER FORM - FULLY WORKING WITH CUSTOM CONFIRM AND PAYMENT STEP
+// ORDER FORM - FULLY WORKING WITH CUSTOM CONFIRM
 // ============================================
 if (orderForm) {
     orderForm.addEventListener('submit', async function(e) {
@@ -1268,7 +1318,6 @@ if (orderForm) {
 
         const { subtotal, discount, finalTotal } = calculateTotals();
 
-        // Build order details HTML for confirm modal
         let detailsHTML = '';
         detailsHTML += `<div class="detail-row"><span>المجموع الفرعي:</span><strong>${formatPrice(subtotal)} $</strong></div>`;
         if (discount > 0) {
@@ -1292,16 +1341,28 @@ if (orderForm) {
         const usedCoupon = appliedCoupon ? { ...appliedCoupon } : null;
         const currentCart = [...cart];
 
+        // Ensure each item has image and code for invoice preview
+        const enrichedCart = currentCart.map(item => {
+            const fullProduct = products.find(p => p.id === item.id) || {};
+            return {
+                ...item,
+                image: item.image || fullProduct.image || 'https://via.placeholder.com/50',
+                code: item.code || fullProduct.code || 'بدون رمز'
+            };
+        });
+
         const orderData = {
             customer: { fullName, phone, city, address, notes },
-            items: currentCart.map(item => ({ 
+            items: enrichedCart.map(item => ({ 
                 id: item.id, 
                 name: item.name, 
                 price: parseFloat(item.price), 
                 qty: item.qty,
                 totalPrice: parseFloat(item.price) * item.qty,
                 selectedSize: item.selectedSize,
-                selectedColor: item.selectedColor
+                selectedColor: item.selectedColor,
+                image: item.image,
+                code: item.code
             })),
             subtotal: subtotal,
             discount: discount,
@@ -1310,7 +1371,6 @@ if (orderForm) {
             timestamp: Date.now()
         };
 
-        // Close order modal and open payment step
         closeOrderModal();
         setTimeout(() => {
             openPaymentStep(orderData);
@@ -1352,7 +1412,8 @@ window.removeFromCart = removeFromCart;
 window.updateQty = updateQty;
 window.openProductOptions = openProductOptions;
 window.closeOptionsModal = closeOptionsModal;
-window.selectPaymentMethod = selectPaymentMethod;
+window.selectPaymentMethod = window.selectPaymentMethod;
+window.closeInvoicePreview = closeInvoicePreview;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -1361,11 +1422,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCouponFromLocal();
     loadData();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCartFn(); closeOrderModal(); closeQuickViewFn(); closeSuccessModalAndGoHome(); closeContactModalFn(); closeOptionsModal(); closePaymentStep(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCartFn(); closeOrderModal(); closeQuickViewFn(); closeSuccessModalAndGoHome(); closeContactModalFn(); closeOptionsModal(); closePaymentStep(); closeInvoicePreview(); } });
 
-// ============================================
-// CLEAR SEARCH BUTTON FUNCTIONALITY
-// ============================================
+// Clear Search Button Functionality
 function initClearSearchButton() {
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearSearchBtn');
@@ -1392,7 +1451,6 @@ function initClearSearchButton() {
 
         const event = new Event('input', { bubbles: true });
         searchInput.dispatchEvent(event);
-
         const keyEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
         searchInput.dispatchEvent(keyEvent);
     });

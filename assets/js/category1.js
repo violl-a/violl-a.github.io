@@ -59,6 +59,78 @@ function getUrlParam(param) { return new URLSearchParams(window.location.search)
 function shuffleArray(array) { const arr = [...array]; for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
 // ============================================
+// INVOICE PREVIEW FUNCTION (New Feature)
+// ============================================
+function showInvoicePreview(orderData) {
+    const modal = document.getElementById('invoicePreviewModal');
+    const content = document.getElementById('invoicePreviewContent');
+    if (!modal || !content) return;
+
+    const { subtotal, discount, finalTotal } = calculateTotals();
+    const discountMessage = appliedCoupon ? (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value}$`) : '';
+
+    let itemsHTML = '';
+    orderData.items.forEach((item, idx) => {
+        itemsHTML += `
+            <tr>
+                <td data-label="#">${idx+1}</td>
+                <td data-label="الصورة"><img src="${item.image || 'https://via.placeholder.com/50'}" alt="${item.name}" style="width:45px; height:45px; object-fit:cover; border-radius:8px;"></td>
+                <td data-label="المنتج" class="product-name">${item.name}${item.selectedSize ? `<br><small>مقاس: ${item.selectedSize}</small>` : ''}${item.selectedColor ? `<br><small>لون: ${item.selectedColor}</small>` : ''}</td>
+                <td data-label="الرمز">${item.code || 'بدون رمز'}</td>
+                <td data-label="العدد">${item.qty}</td>
+                <td data-label="السعر">${formatPrice(item.price)} $</td>
+                <td data-label="الإجمالي">${formatPrice(item.price * item.qty)} $</td>
+            </tr>
+        `;
+    });
+
+    const invoiceHTML = `
+        <div style="direction:rtl; font-family:'Tajawal',sans-serif;">
+            <div class="invoice-header">
+                <h2><i class="fas fa-receipt"></i> فاتورة الطلب - ڤيولا</h2>
+                <button class="close-invoice" onclick="closeInvoicePreview()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="invoice-info">
+                <p><strong>الاسم:</strong> ${orderData.customer.fullName}</p>
+                <p><strong>الهاتف:</strong> ${orderData.customer.phone}</p>
+                <p><strong>المدينة:</strong> ${orderData.customer.city}</p>
+                <p><strong>العنوان:</strong> ${orderData.customer.address}</p>
+                ${orderData.customer.notes ? `<p><strong>ملاحظات:</strong> ${orderData.customer.notes}</p>` : ''}
+            </div>
+            <div class="invoice-table-wrapper">
+                <table class="invoice-table">
+                    <thead>
+                        <tr><th>#</th><th>الصورة</th><th>المنتج</th><th>الرمز</th><th>العدد</th><th>السعر</th><th>الإجمالي</th></tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHTML}
+                    </tbody>
+                </table>
+            </div>
+            <div class="invoice-totals">
+                <p>المجموع الفرعي: ${formatPrice(subtotal)} $</p>
+                ${discount > 0 ? `<p style="color:#2ed573;">الخصم (${discountMessage}): - ${formatPrice(discount)} $</p>` : ''}
+                <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
+                <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
+            </div>
+            <button class="print-btn" onclick="window.print();"><i class="fas fa-print"></i> طباعة / تحميل الفاتورة</button>
+        </div>
+    `;
+
+    content.innerHTML = invoiceHTML;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeInvoicePreview() {
+    const modal = document.getElementById('invoicePreviewModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// ============================================
 // CUSTOM CONFIRM MODAL - VIOLA STYLE
 // ============================================
 function showConfirmModal(options) {
@@ -156,7 +228,7 @@ function openPaymentStep(orderData) {
                 <div class="payment-step-header">
                     <button class="close-payment-step" id="closePaymentStep"><i class="fas fa-times"></i></button>
                     <h3><i class="fas fa-credit-card"></i> إتمام الدفع</h3>
-                    <p>اختاري طريقة الدفع المناسبة وأرفقي وصل التحويل</p>
+                    <p>اختري طريقة الدفع المناسبة وأرفقي وصل التحويل</p>
                 </div>
                 <div class="payment-step-body">
                     <div class="order-info-summary">
@@ -244,6 +316,7 @@ function openPaymentStep(orderData) {
                 </div>
                 <div class="payment-step-footer">
                     <button class="confirm-btn confirm-btn-secondary" id="paymentStepBack"><i class="fas fa-arrow-right"></i> رجوع</button>
+                    <button class="confirm-btn confirm-btn-primary" id="paymentStepShowInvoice"><i class="fas fa-receipt"></i> 📄 عرض الفاتورة</button>
                     <button class="confirm-btn confirm-btn-primary" id="paymentStepSubmit"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
                 </div>
             </div>
@@ -256,7 +329,6 @@ function openPaymentStep(orderData) {
     const overlay = document.getElementById('paymentStepOverlay');
     requestAnimationFrame(() => overlay.classList.add('active'));
 
-    // تحديد الحالة الافتراضية: إظهار الدفع اليدوي وإخفاء الباركود ورفع الصورة
     window.selectPaymentMethod('manual');
 
     document.getElementById('paymentStepReceiptFile').addEventListener('change', function(e) {
@@ -284,6 +356,14 @@ function openPaymentStep(orderData) {
     document.getElementById('paymentStepBack').addEventListener('click', () => {
         closePaymentStep();
         openOrderModal();
+    });
+
+    document.getElementById('paymentStepShowInvoice').addEventListener('click', () => {
+        if (pendingOrderData) {
+            showInvoicePreview(pendingOrderData);
+        } else {
+            showToast('لا توجد بيانات لعرض الفاتورة', true);
+        }
     });
 
     document.getElementById('paymentStepSubmit').addEventListener('click', async () => {
@@ -380,7 +460,6 @@ async function submitOrderWithPayment() {
             closeOrderModal();
             closeCartFn();
 
-            // ✅ تم إرسال الطلب بنجاح - Toast notification
             showToast("✅ تم إرسال الطلب بنجاح!", false);
 
             setTimeout(() => {
@@ -1118,7 +1197,6 @@ function initCatSearch() {
                     }
                 } else {
                     catSearchSuggestions.classList.remove('active');
-                    // إعادة تعيين البحث وعرض جميع المنتجات
                     searchQueryCategory = '';
                     renderCategoryProducts(true);
                 }
@@ -1209,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('categoryLoadMoreBtn')?.addEventListener('click', loadMoreProducts);
     
     // ============================================
-    // ORDER FORM - WITH ADVANCED PAYMENT STEP (LIKE INDEX)
+    // ORDER FORM - WITH ADVANCED PAYMENT STEP
     // ============================================
     document.getElementById('orderForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1250,16 +1328,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const usedCoupon = appliedCoupon ? { ...appliedCoupon } : null;
         const currentCart = [...cart];
 
+        // Enrich cart items with image and code
+        const enrichedCart = currentCart.map(item => {
+            const fullProduct = products.find(p => p.id === item.id) || {};
+            return {
+                ...item,
+                image: item.image || fullProduct.image || 'https://via.placeholder.com/50',
+                code: item.code || fullProduct.code || 'بدون رمز'
+            };
+        });
+
         const orderData = {
             customer: { fullName, phone, city, address, notes },
-            items: currentCart.map(item => ({ 
+            items: enrichedCart.map(item => ({ 
                 id: item.id, 
                 name: item.name, 
                 price: parseFloat(item.price), 
                 qty: item.qty,
                 totalPrice: parseFloat(item.price) * item.qty,
                 selectedSize: item.selectedSize,
-                selectedColor: item.selectedColor
+                selectedColor: item.selectedColor,
+                image: item.image,
+                code: item.code
             })),
             subtotal: subtotal,
             discount: discount,
@@ -1275,7 +1365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCartFn(); closeOrderModal(); closeQuickView(); const successModalElem = document.getElementById('successModal'); if (successModalElem && successModalElem.classList.contains('active')) closeSuccessModalAndGoHome(); closeContactModalFn(); closeOptionsModal(); closePaymentStep(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCartFn(); closeOrderModal(); closeQuickView(); const successModalElem = document.getElementById('successModal'); if (successModalElem && successModalElem.classList.contains('active')) closeSuccessModalAndGoHome(); closeContactModalFn(); closeOptionsModal(); closePaymentStep(); closeInvoicePreview(); } });
 
 // Export for global access
 window.applyCoupon = applyCoupon;
@@ -1286,6 +1376,7 @@ window.updateQty = updateQty;
 window.openProductOptions = openProductOptions;
 window.closeOptionsModal = closeOptionsModal;
 window.selectPaymentMethod = window.selectPaymentMethod;
+window.closeInvoicePreview = closeInvoicePreview;
 
 // ============================================
 // CLEAR SEARCH BUTTON FUNCTIONALITY

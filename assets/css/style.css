@@ -2316,7 +2316,6 @@ section {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        /* justify-content: center;*/
         padding-bottom: 8px;
         max-width: 100%;
     }
@@ -3615,5 +3614,44 @@ section {
     .payment-step-footer {
         flex-direction: column;
         padding: 0 16px 20px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE INVOICE TABLE (Mobile)
+   ============================================ */
+
+@media (max-width: 768px) {
+    .invoice-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 12px;
+    }
+    .invoice-table {
+        min-width: 480px;
+    }
+    .invoice-table th, .invoice-table td {
+        padding: 6px 4px;
+        font-size: 0.7rem;
+    }
+    .invoice-table td img {
+        width: 35px;
+        height: 35px;
+    }
+    .invoice-preview-content {
+        padding: 12px;
+    }
+    .invoice-header h2 {
+        font-size: 1.2rem;
+    }
+    .invoice-info p {
+        font-size: 0.8rem;
+    }
+    .invoice-totals p {
+        font-size: 0.9rem;
+    }
+    .print-btn {
+        font-size: 0.9rem;
+        padding: 8px 16px;
     }
 }

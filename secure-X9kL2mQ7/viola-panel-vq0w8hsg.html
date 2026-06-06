@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ڤيولا - لوحة التحكم</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -59,18 +59,15 @@
         .order-items-list { font-size: 0.75rem; margin-top: 8px; padding: 8px; background: #fffafc; border-radius: 12px; }
         .price-value { font-family: monospace; font-size: 0.85rem; font-weight: bold; }
         
-        /* Dynamic images responsive */
-        .item-img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 12px;
-        }
-        .form-card img.preview-img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 12px;
-            margin-top: 10px;
+        /* Invoice Table Styles for Admin */
+        .invoice-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fffafc; border-radius: 12px; overflow: hidden; }
+        .invoice-table th, .invoice-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #f8bbd9; font-size: 0.75rem; }
+        .invoice-table th { background: #fce4ec; color: #e91e63; font-weight: 700; }
+        .invoice-table td img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #f8bbd9; }
+        .invoice-table .product-name { font-weight: 600; color: #4a1a3a; }
+        @media (max-width: 600px) {
+            .invoice-table th, .invoice-table td { font-size: 0.65rem; padding: 6px 4px; }
+            .invoice-table td img { width: 30px; height: 30px; }
         }
     </style>
 </head>
@@ -151,7 +148,7 @@
         <div class="file-upload-btn" onclick="document.getElementById('prodImageFile').click()"><i class="fas fa-cloud-upload-alt"></i> اختر صورة المنتج</div>
         <input type="file" id="prodImageFile" accept="image/*" style="display:none">
         <div id="prodFileName" style="font-size:0.7rem; margin:5px 0;">📷 لم يتم اختيار ملف</div>
-        <div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-ruler"></i> المقاسات المتاحة</label><div id="sizesContainer" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;"></div><div class="row-2"><select id="sizeSelect"><option value="">اختر مقاس</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option></select><button class="btn btn-secondary" onclick="addSize()">+ إضافة مقاس</button></div></div>
+        <div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-ruler"></i> المقاسات المتاحة</label><div id="sizesContainer" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;"></div><div class="row-2"><input type="text" id="sizeInput" placeholder="مثال: XL"><button class="btn btn-secondary" onclick="addSize()">+ إضافة مقاس</button></div></div>
         <div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-palette"></i> الألوان المتاحة</label><div id="colorsContainer" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;"></div><div class="row-2"><input type="text" id="colorInput" placeholder="مثال: أحمر"><button class="btn btn-secondary" onclick="addColor()">+ إضافة لون</button></div></div>
         <button id="addProductBtn" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة منتج</button>
         <div id="productLoader" style="display:none; text-align:center; margin-top:10px;"><i class="fas fa-spinner fa-spin"></i> جاري...</div>
@@ -174,7 +171,6 @@
     <h3 style="margin: 5px 0 8px; font-size:0.9rem;"><i class="fas fa-ticket-alt"></i> كوبونات الخصم الحالية</h3>
     <div id="couponsList" class="items-list"></div>
 </div>
-
 
 <!-- ==================== تبويب الإعدادات ==================== -->
 <div id="tabSettings" class="tab-content">
@@ -339,7 +335,6 @@
     
     // ==================== Realtime Listeners ====================
     function setupRealtimeListeners() {
-        // الاستماع للتغييرات في الطلبات
         if (realtimeListeners.orders) db.ref('orders').off('value', realtimeListeners.orders);
         realtimeListeners.orders = db.ref('orders').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -352,7 +347,6 @@
             }
         });
         
-        // الاستماع للتغييرات في المنتجات
         if (realtimeListeners.products) db.ref('products').off('value', realtimeListeners.products);
         realtimeListeners.products = db.ref('products').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -366,7 +360,6 @@
             }
         });
         
-        // الاستماع للتغييرات في الفئات
         if (realtimeListeners.categories) db.ref('categories').off('value', realtimeListeners.categories);
         realtimeListeners.categories = db.ref('categories').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -380,7 +373,6 @@
             }
         });
         
-        // الاستماع للتغييرات في الكوبونات
         if (realtimeListeners.coupons) db.ref('coupons').off('value', realtimeListeners.coupons);
         realtimeListeners.coupons = db.ref('coupons').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -393,7 +385,6 @@
             }
         });
         
-        // الاستماع للتغييرات في الإعلانات
         if (realtimeListeners.ads) db.ref('ads').off('value', realtimeListeners.ads);
         realtimeListeners.ads = db.ref('ads').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -407,7 +398,7 @@
         });
     }
     
-    // ==================== عرض الطلبات ====================
+    // ==================== عرض الطلبات (مع جدول الفاتورة المحسن) ====================
     function renderOrders() {
         const container = document.getElementById('ordersList');
         const statsSpan = document.getElementById('ordersStats');
@@ -420,7 +411,55 @@
         filtered.sort((a,b) => b.timestamp - a.timestamp);
         statsSpan.innerHTML = `📦 إجمالي الطلبات: ${filtered.length}`;
         if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد طلبات بعد</div>'; return; }
-        container.innerHTML = filtered.map(order => `
+        
+        container.innerHTML = filtered.map(order => {
+            // Build items table
+            let itemsTable = `
+                <table class="invoice-table" style="width:100%; margin-top:12px;">
+                    <thead>
+                        <tr><th>#</th><th>الصورة</th><th>اسم المنتج</th><th>رمز المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+            order.items.forEach((item, idx) => {
+                const productCode = item.code || (products.find(p => p.id === item.id)?.code) || 'بدون رمز';
+                itemsTable += `
+                    <tr>
+                        <td>${idx+1}</td>
+                        <td><img src="${item.image || 'https://via.placeholder.com/50'}" alt="${item.name}" style="width:45px; height:45px; object-fit:cover; border-radius:8px;"></td>
+                        <td class="product-name">${escapeHtml(item.name)}${item.selectedSize ? `<br><small style="color:#e91e63;">مقاس: ${item.selectedSize}</small>` : ''}${item.selectedColor ? `<br><small style="color:#e91e63;">لون: ${item.selectedColor}</small>` : ''}</td>
+                        <td style="font-size:0.7rem;">${productCode}</td>
+                        <td>${item.qty}</td>
+                        <td>${formatPrice(item.price)} $</td>
+                        <td>${formatPrice(item.price * item.qty)} $</td>
+                    </tr>
+                `;
+            });
+            itemsTable += `</tbody></table>`;
+            
+            let receiptHTML = '';
+            if (order.paymentReceipt && order.paymentReceipt.data) {
+                if (order.paymentReceipt.type === 'base64_image') {
+                    receiptHTML = `
+                    <div style="margin-top:12px; text-align:center;">
+                        <div style="font-size:0.8rem; color:#e91e63; margin-bottom:8px;"><i class="fas fa-paperclip"></i> وصل الدفع المرفق:</div>
+                        <div style="display:inline-block; border:2px solid #f8bbd9; border-radius:12px; padding:8px; background:white; cursor:pointer;" onclick="showReceiptImage('${order.paymentReceipt.data.replace(/'/g, "\\'")}')">
+                            <img src="${order.paymentReceipt.data}" style="max-width:200px; max-height:200px; border-radius:8px;" alt="وصل الدفع">
+                        </div>
+                        <div style="font-size:0.7rem; color:#b08a9e; margin-top:4px;"><i class="fas fa-search-plus"></i> اضغط للتكبير</div>
+                    </div>
+                    `;
+                } else {
+                    receiptHTML = `
+                    <div style="background:#fff0f5; border-right:3px solid #e91e63; padding:12px; border-radius:12px; text-align:right; margin-top:12px;">
+                        <div style="font-size:0.8rem; color:#e91e63; margin-bottom:6px; font-weight:700;"><i class="fas fa-hand-holding-usd"></i> طريقة الدفع المختارة:</div>
+                        <div style="font-size:0.9rem; color:#4a1a3a; font-weight:600;">${order.paymentReceipt.data}</div>
+                    </div>
+                    `;
+                }
+            }
+            
+            return `
             <div class="item-card">
                 <div class="item-header">
                     <div class="item-info">
@@ -440,9 +479,9 @@
                 <div style="font-size:0.8rem; margin:5px 0;">📅 ${formatDate(order.timestamp)}</div>
                 <div class="order-items-list">
                     <strong>المنتجات:</strong>
-                    ${order.items.map(item => `• ${item.name} x ${item.qty} = ${formatPrice(item.price * item.qty)}$ ${item.selectedSize ? `(مقاس: ${item.selectedSize})` : ''} ${item.selectedColor ? `(لون: ${item.selectedColor})` : ''}<br>`).join('')}
+                    ${itemsTable}
                 </div>
-                <div style="margin-top:8px;">
+                <div style="margin-top:12px;">
                     <span>🏠 ${order.customer.address}</span><br>
                     ${order.notes ? `<span>📝 ملاحظات: ${order.notes}</span><br>` : ''}
                     ${order.coupon ? `<span>🎫 كود خصم: ${order.coupon.code} (${order.coupon.type === 'percentage' ? order.coupon.value+'%' : order.coupon.value+'$'})</span><br>` : ''}
@@ -452,24 +491,10 @@
                     ${order.paymentMethod ? `<br><span class="badge" style="background:${order.paymentMethod === 'barcode' ? '#e91e63' : '#b08a9e'}; color:white; margin-top:4px; display:inline-block;">${order.paymentMethod === 'barcode' ? '💳 دفع بالباركود' : '💵 دفع يدوي'}</span>` : ''}
                     ${order.paymentStatus ? `<span class="badge" style="background:${order.paymentStatus === 'verified' ? '#2ed573' : order.paymentStatus === 'rejected' ? '#ff4757' : '#ffa502'}; color:white; margin-top:4px; display:inline-block;">${order.paymentStatus === 'verified' ? '✅ تم التحقق' : order.paymentStatus === 'rejected' ? '❌ مرفوض' : '⏳ قيد المراجعة'}</span>` : ''}
                 </div>
-                ${order.paymentReceipt && order.paymentReceipt.data ? `
-                <div style="margin-top:12px; text-align:center;">
-                    ${order.paymentReceipt.type === 'base64_image' ? `
-                    <div style="font-size:0.8rem; color:#b08a9e; margin-bottom:8px;"><i class="fas fa-paperclip"></i> وصل الدفع المرفق:</div>
-                    <div style="display:inline-block; border:2px solid #f8bbd9; border-radius:12px; padding:8px; background:white; cursor:pointer;" onclick="showReceiptImage('${order.paymentReceipt.data.replace(/'/g, "\'")}')">
-                        <img src="${order.paymentReceipt.data}" style="max-width:200px; max-height:200px; border-radius:8px;" alt="وصل الدفع">
-                    </div>
-                    <div style="font-size:0.7rem; color:#b08a9e; margin-top:4px;"><i class="fas fa-search-plus"></i> اضغط للتكبير</div>
-                    ` : `
-                    <div style="background:#fff0f5; border-right:3px solid #e91e63; padding:12px; border-radius:12px; text-align:right;">
-                        <div style="font-size:0.8rem; color:#e91e63; margin-bottom:6px; font-weight:700;"><i class="fas fa-hand-holding-usd"></i> طريقة الدفع المختارة:</div>
-                        <div style="font-size:0.9rem; color:#4a1a3a; font-weight:600;">${order.paymentReceipt.data}</div>
-                    </div>
-                    `}
-                </div>
-                ` : ''}
+                ${receiptHTML}
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
     
     // ==================== عرض الكوبونات ====================
@@ -553,12 +578,19 @@
         container.innerHTML = filtered.map(p => `
             <div class="item-card"><div class="item-header"><div class="item-info"><img src="${p.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><strong>${escapeHtml(p.name)}</strong> - ${formatPrice(p.price)}$<span class="badge" style="background:#e91e63; color:white;">${p.code || 'بدون'}</span><span class="badge ${p.active?'badge-active':'badge-inactive'}">${p.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditProduct('${p.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleProduct('${p.id}')"><i class="fas fa-eye${p.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button></div></div>
             <div style="font-size:0.7rem; margin:5px 0;">القسم: ${catsMap[p.categoryId] || 'غير محدد'} | ${p.sizes?.length ? `📏 ${p.sizes.join(', ')}` : ''} ${p.colors?.length ? `🎨 ${p.colors.join(', ')}` : ''}</div>
-            <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
+            <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="row-2" style="margin-top:8px;"><select id="editCat_${p.id}"><option value="">اختر القسم</option>${categories.map(c => `<option value="${c.id}" ${c.id === p.categoryId ? 'selected' : ''}>${c.name}</option>`).join('')}</select><select id="editSubcat_${p.id}"><option value="">اختر الفئة</option>${(categories.find(c => c.id === p.categoryId)?.subcategories ? Object.keys(categories.find(c => c.id === p.categoryId).subcategories).map(subId => { const sub = categories.find(c => c.id === p.categoryId).subcategories[subId]; return `<option value="${subId}" ${subId === p.subcategoryId ? 'selected' : ''}>${sub.name}</option>`; }).join('') : '')}</select></div><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
         `).join('');
         products.forEach(p => { const fi = document.getElementById(`editImgFile_${p.id}`); if(fi) fi.onchange = (e) => { tempEditProductFile[p.id] = e.target.files[0]; showToast("تم اختيار صورة جديدة"); }; });
     }
     
-    function renderAll() { if (currentUserRole === 'super') renderAds(); renderCategories(); renderSubcategories(); renderProducts(); renderCoupons(); renderOrders(); updateCategorySelects(); }
+    function updateNewCatOrder() {
+        const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => (c.order !== undefined ? c.order : 0))) : -1;
+        const nextOrder = maxOrder + 2; // +2 because order is 0-based internally, display is 1-based
+        const input = document.getElementById('newCatOrder');
+        if (input) input.value = nextOrder;
+    }
+
+    function renderAll() { if (currentUserRole === 'super') renderAds(); renderCategories(); renderSubcategories(); renderProducts(); renderCoupons(); renderOrders(); updateCategorySelects(); updateNewCatOrder(); }
     
     // ==================== Category Functions ====================
     window.openEditCat = (id) => { document.getElementById(`editCat_${id}`).classList.add('open'); };
@@ -604,7 +636,7 @@
     window.deleteProduct = async (id) => { products = products.filter(p=>p.id!==id); await saveAll(); };
     window.openEditProduct = (id) => { document.getElementById(`editProduct_${id}`).classList.add('open'); };
     window.updateProductImage = async (id) => { if(!tempEditProductFile[id]) return showToast("اختر صورة",true); const url = await uploadImageToCloudinary(tempEditProductFile[id]); const prod = products.find(p=>p.id===id); prod.image = url; await saveAll(); delete tempEditProductFile[id]; showToast("تم تحديث الصورة"); };
-    window.updateProductData = async (id) => { const prod = products.find(p=>p.id===id); prod.name = document.getElementById(`editName_${id}`).value; prod.price = document.getElementById(`editPrice_${id}`).value; prod.oldprice = document.getElementById(`editOld_${id}`).value; prod.desc = document.getElementById(`editDesc_${id}`).value; let nc = document.getElementById(`editCode_${id}`).value.trim(); if(nc) prod.code = nc; await saveAll(); document.getElementById(`editProduct_${id}`).classList.remove('open'); showToast("تم تعديل المنتج"); };
+    window.updateProductData = async (id) => { const prod = products.find(p=>p.id===id); prod.name = document.getElementById(`editName_${id}`).value; prod.price = document.getElementById(`editPrice_${id}`).value; prod.oldprice = document.getElementById(`editOld_${id}`).value; prod.desc = document.getElementById(`editDesc_${id}`).value; let nc = document.getElementById(`editCode_${id}`).value.trim(); if(nc) prod.code = nc; const newCatId = document.getElementById(`editCat_${id}`).value; const newSubcatId = document.getElementById(`editSubcat_${id}`).value; if(newCatId) prod.categoryId = newCatId; if(newSubcatId) prod.subcategoryId = newSubcatId; await saveAll(); document.getElementById(`editProduct_${id}`).classList.remove('open'); showToast("تم تعديل المنتج"); };
     
     // ==================== Ad Functions ====================
     window.toggleAd = async (id) => { if (currentUserRole !== 'super') return; const ad = ads.find(a=>a.id===id); ad.active = !ad.active; await saveAll(); };
@@ -617,50 +649,48 @@
     // ==================== Order Functions ====================
     window.deleteOrder = async (id) => { if(confirm("هل تريد حذف هذا الطلب؟")){ orders = orders.filter(o=>o.id!==id); await db.ref('orders').set(orders.reduce((acc,o)=>(acc[o.id]=o,acc),{})); renderOrders(); showToast("تم حذف الطلب"); } };
 
-window.verifyPayment = async (id) => {
-    const order = orders.find(o => o.id === id);
-    if (order) {
-        order.paymentStatus = 'verified';
-        await db.ref(`orders/${id}/paymentStatus`).set('verified');
-        renderOrders();
-        showToast('✅ تم التحقق من الدفع');
-    }
-};
+    window.verifyPayment = async (id) => {
+        const order = orders.find(o => o.id === id);
+        if (order) {
+            order.paymentStatus = 'verified';
+            await db.ref(`orders/${id}/paymentStatus`).set('verified');
+            renderOrders();
+            showToast('✅ تم التحقق من الدفع');
+        }
+    };
 
-window.rejectPayment = async (id) => {
-    const order = orders.find(o => o.id === id);
-    if (order) {
-        order.paymentStatus = 'rejected';
-        await db.ref(`orders/${id}/paymentStatus`).set('rejected');
-        renderOrders();
-        showToast('❌ تم رفض الدفع');
-    }
-};
+    window.rejectPayment = async (id) => {
+        const order = orders.find(o => o.id === id);
+        if (order) {
+            order.paymentStatus = 'rejected';
+            await db.ref(`orders/${id}/paymentStatus`).set('rejected');
+            renderOrders();
+            showToast('❌ تم رفض الدفع');
+        }
+    };
 
-// Show receipt image in full size modal
-window.showReceiptImage = function(imageData) {
-    const existingModal = document.getElementById('receiptImageModal');
-    if (existingModal) existingModal.remove();
+    window.showReceiptImage = function(imageData) {
+        const existingModal = document.getElementById('receiptImageModal');
+        if (existingModal) existingModal.remove();
 
-    const modalHTML = `
-        <div id="receiptImageModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;" onclick="this.remove()">
-            <div style="position:relative; max-width:90vw; max-height:90vh;">
-                <img src="${imageData}" style="max-width:90vw; max-height:90vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
-                <button style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('receiptImageModal').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
+        const modalHTML = `
+            <div id="receiptImageModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;" onclick="this.remove()">
+                <div style="position:relative; max-width:90vw; max-height:90vh;">
+                    <img src="${imageData}" style="max-width:90vw; max-height:90vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+                    <button style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('receiptImageModal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    document.body.style.overflow = 'hidden';
-
-    const modal = document.getElementById('receiptImageModal');
-    modal.addEventListener('click', () => {
-        modal.remove();
-        document.body.style.overflow = '';
-    });
-};
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        const modal = document.getElementById('receiptImageModal');
+        modal.addEventListener('click', () => {
+            modal.remove();
+            document.body.style.overflow = '';
+        });
+    };
     
     // ==================== Add Functions ====================
     document.getElementById('addCategoryBtn').onclick = async () => {
@@ -707,7 +737,7 @@ window.showReceiptImage = function(imageData) {
     
     function updateSizesDisplay() { const container = document.getElementById('sizesContainer'); container.innerHTML = tempSizes.map(s => `<span class="size-tag">${s} <button class="remove-tag" onclick="removeSize('${s}')">✖</button></span>`).join(''); }
     function updateColorsDisplay() { const container = document.getElementById('colorsContainer'); container.innerHTML = tempColors.map(c => `<span class="size-tag">${c} <button class="remove-tag" onclick="removeColor('${c}')">✖</button></span>`).join(''); }
-    window.addSize = () => { const select = document.getElementById('sizeSelect'); const size = select.value; if(!size || tempSizes.includes(size)) return; tempSizes.push(size); updateSizesDisplay(); select.value = ""; };
+    window.addSize = () => { const input = document.getElementById('sizeInput'); const size = input.value.trim(); if(!size || tempSizes.includes(size)) return; tempSizes.push(size); updateSizesDisplay(); input.value = ""; };
     window.removeSize = (size) => { tempSizes = tempSizes.filter(s => s !== size); updateSizesDisplay(); };
     window.addColor = () => { const input = document.getElementById('colorInput'); const color = input.value.trim(); if(!color || tempColors.includes(color)) return; tempColors.push(color); updateColorsDisplay(); input.value = ""; };
     window.removeColor = (color) => { tempColors = tempColors.filter(c => c !== color); updateColorsDisplay(); };
@@ -752,7 +782,7 @@ window.showReceiptImage = function(imageData) {
     };
     document.getElementById('prodImageFile').onchange = (e) => { document.getElementById('prodFileName').innerHTML = `📷 ${e.target.files[0]?.name || ''}`; };
     
-    // ==================== إضافة كوبون جديد - مع التأكد من أن usageLimit رقم صحيح ====================
+    // ==================== إضافة كوبون جديد ====================
     document.getElementById('addCouponBtn').onclick = async () => {
         const code = document.getElementById('couponCode').value.trim().toUpperCase();
         const type = document.getElementById('couponType').value;
@@ -855,13 +885,110 @@ window.showReceiptImage = function(imageData) {
             updateCategorySelects();
             renderAll();
             
-            // إعداد المستمعات للتحديث التلقائي
             setupRealtimeListeners();
             
             document.getElementById('searchProducts')?.addEventListener('input', (e) => { lastSearchText = e.target.value; renderProducts(); });
             document.getElementById('searchOrders')?.addEventListener('input', (e) => { lastOrderSearchText = e.target.value; renderOrders(); });
+            
+            // تحميل الإعدادات من Firebase وعرضها في واجهة الإعدادات
+            await loadSettingsFromFirebase();
         } catch(err) { console.error(err); showToast("خطأ في تحميل البيانات", true); }
     }
+    
+    // ==================== إعدادات التغليف والباركود - محسنة ====================
+    let giftBoxSettings = { threshold: 0, message: '' };
+    let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
+    
+    async function loadSettingsFromFirebase() {
+        try {
+            const [giftSnap, barcodeSnap] = await Promise.all([
+                db.ref('settings/giftBox').once('value'),
+                db.ref('settings/paymentBarcode').once('value')
+            ]);
+            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+            if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
+            
+            // تحديث واجهة المستخدم
+            document.getElementById('giftBoxThreshold').value = giftBoxSettings.threshold || '';
+            document.getElementById('giftBoxMessage').value = giftBoxSettings.message || '';
+            document.getElementById('previewGiftThreshold').textContent = (giftBoxSettings.threshold || 0) + ' $';
+            
+            document.getElementById('paymentBarcodeEnabled').value = paymentBarcodeSettings.enabled ? 'true' : 'false';
+            document.getElementById('paymentBarcodeTitle').value = paymentBarcodeSettings.title || '';
+            document.getElementById('paymentBarcodeDesc').value = paymentBarcodeSettings.description || '';
+            document.getElementById('previewBarcodeStatus').textContent = paymentBarcodeSettings.enabled ? 'مفعل ✅' : 'معطل ❌';
+            document.getElementById('previewBarcodeStatus').style.color = paymentBarcodeSettings.enabled ? '#2ed573' : '#ff4757';
+            if (paymentBarcodeSettings.image) {
+                document.getElementById('paymentBarcodeImg').src = paymentBarcodeSettings.image;
+                document.getElementById('paymentBarcodePreview').style.display = 'block';
+                document.getElementById('previewBarcodeImage').src = paymentBarcodeSettings.image;
+                document.getElementById('previewBarcodeImg').style.display = 'block';
+            }
+        } catch(err) { console.error('Error loading settings from Firebase:', err); }
+    }
+    
+    async function saveGiftSettings() {
+        const threshold = parseFloat(document.getElementById('giftBoxThreshold').value) || 0;
+        const message = document.getElementById('giftBoxMessage').value.trim() || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
+        giftBoxSettings = { threshold, message };
+        try {
+            await db.ref('settings/giftBox').set(giftBoxSettings);
+            localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
+            showToast('✅ تم حفظ إعدادات التغليف في Firebase و localStorage');
+        } catch(err) {
+            showToast('⚠️ فشل الحفظ في Firebase، تم الحفظ محلياً فقط', true);
+            localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
+        }
+        document.getElementById('previewGiftThreshold').textContent = threshold + ' $';
+    }
+    
+    async function savePaymentBarcode() {
+        const enabled = document.getElementById('paymentBarcodeEnabled').value === 'true';
+        const title = document.getElementById('paymentBarcodeTitle').value.trim();
+        const description = document.getElementById('paymentBarcodeDesc').value.trim();
+        let imageUrl = paymentBarcodeSettings.image || '';
+        
+        const fileInput = document.getElementById('paymentBarcodeFile');
+        if (fileInput.files.length) {
+            try {
+                imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
+            } catch(err) { showToast('خطأ في رفع الصورة', true); return; }
+        }
+        
+        paymentBarcodeSettings = { enabled, title, description, image: imageUrl };
+        
+        // حفظ في Firebase أولاً ثم localStorage
+        let firebaseSuccess = false;
+        try {
+            await db.ref('settings/paymentBarcode').set(paymentBarcodeSettings);
+            firebaseSuccess = true;
+        } catch(fbErr) {
+            console.error('Firebase save failed:', fbErr);
+        }
+        localStorage.setItem('viola_paymentBarcodeSettings', JSON.stringify(paymentBarcodeSettings));
+        
+        if (firebaseSuccess) {
+            showToast('✅ تم حفظ إعدادات الباركود في Firebase و localStorage');
+        } else {
+            showToast('⚠️ تم الحفظ محلياً فقط (راجع صلاحيات Firebase)', true);
+        }
+        
+        // تحديث المعاينة
+        document.getElementById('previewBarcodeStatus').textContent = enabled ? 'مفعل ✅' : 'معطل ❌';
+        document.getElementById('previewBarcodeStatus').style.color = enabled ? '#2ed573' : '#ff4757';
+        if (imageUrl) {
+            document.getElementById('paymentBarcodeImg').src = imageUrl;
+            document.getElementById('paymentBarcodePreview').style.display = 'block';
+            document.getElementById('previewBarcodeImage').src = imageUrl;
+            document.getElementById('previewBarcodeImg').style.display = 'block';
+        }
+    }
+    
+    document.getElementById('saveGiftSettingsBtn').onclick = saveGiftSettings;
+    document.getElementById('savePaymentBarcodeBtn').onclick = savePaymentBarcode;
+    document.getElementById('paymentBarcodeFile').onchange = (e) => {
+        document.getElementById('paymentBarcodeFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`;
+    };
     
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -884,7 +1011,6 @@ window.showReceiptImage = function(imageData) {
             if (role === 'super') { currentUserRole = 'super'; }
             else { currentUserRole = 'admin'; document.querySelector('.tab-btn[data-tab="ads"]').style.display = 'none'; }
             await loadData();
-            await loadSettings();
         } catch (err) { currentUserRole = 'admin'; await loadData(); }
     });
     document.getElementById('logoutBtn').onclick = () => auth.signOut().then(() => window.location.href = 'viola-access-cp0596lu.html');
@@ -925,111 +1051,6 @@ function initAdminClearButtons() {
 }
 
 document.addEventListener('DOMContentLoaded', initAdminClearButtons);
-
-    // ==================== إعدادات التغليف والباركود ====================
-    let giftBoxSettings = { threshold: 0, message: '' };
-    let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
-
-    async function loadSettings() {
-        try {
-            // Try to load from localStorage first (fallback if Firebase fails)
-            const localGift = localStorage.getItem('viola_giftBoxSettings');
-            const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
-
-            if (localGift) {
-                try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
-            }
-            if (localBarcode) {
-                try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
-            }
-
-            // Try Firebase (if permissions allow)
-            try {
-                const [giftSnap, barcodeSnap] = await Promise.all([
-                    db.ref('settings/giftBox').once('value'),
-                    db.ref('settings/paymentBarcode').once('value')
-                ]);
-                if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
-                if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
-            } catch(fbErr) {
-                console.log('Firebase settings load failed, using localStorage:', fbErr.message);
-            }
-
-            // Update UI
-            document.getElementById('giftBoxThreshold').value = giftBoxSettings.threshold || '';
-            document.getElementById('giftBoxMessage').value = giftBoxSettings.message || '';
-            document.getElementById('previewGiftThreshold').textContent = (giftBoxSettings.threshold || 0) + ' $';
-
-            document.getElementById('paymentBarcodeEnabled').value = paymentBarcodeSettings.enabled ? 'true' : 'false';
-            document.getElementById('paymentBarcodeTitle').value = paymentBarcodeSettings.title || '';
-            document.getElementById('paymentBarcodeDesc').value = paymentBarcodeSettings.description || '';
-            document.getElementById('previewBarcodeStatus').textContent = paymentBarcodeSettings.enabled ? 'مفعل ✅' : 'معطل ❌';
-            document.getElementById('previewBarcodeStatus').style.color = paymentBarcodeSettings.enabled ? '#2ed573' : '#ff4757';
-
-            if (paymentBarcodeSettings.image) {
-                document.getElementById('paymentBarcodeImg').src = paymentBarcodeSettings.image;
-                document.getElementById('paymentBarcodePreview').style.display = 'block';
-                document.getElementById('previewBarcodeImage').src = paymentBarcodeSettings.image;
-                document.getElementById('previewBarcodeImg').style.display = 'block';
-            }
-        } catch(err) { console.error('Error loading settings:', err); }
-    }
-
-    async function saveSettingsToFirebase() {
-        try {
-            await db.ref('settings/giftBox').set(giftBoxSettings);
-            await db.ref('settings/paymentBarcode').set(paymentBarcodeSettings);
-            showToast('✅ تم الحفظ في Firebase');
-        } catch(fbErr) {
-            console.log('Firebase save failed, saved locally only:', fbErr.message);
-            showToast('⚠️ تم الحفظ محلياً فقط (Firebase permissions)');
-        }
-    }
-
-    document.getElementById('saveGiftSettingsBtn').onclick = async () => {
-        const threshold = parseFloat(document.getElementById('giftBoxThreshold').value) || 0;
-        const message = document.getElementById('giftBoxMessage').value.trim() || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
-
-        giftBoxSettings = { threshold, message };
-        localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
-
-        document.getElementById('previewGiftThreshold').textContent = threshold + ' $';
-        await saveSettingsToFirebase();
-    };
-
-    document.getElementById('savePaymentBarcodeBtn').onclick = async () => {
-        const enabled = document.getElementById('paymentBarcodeEnabled').value === 'true';
-        const title = document.getElementById('paymentBarcodeTitle').value.trim();
-        const description = document.getElementById('paymentBarcodeDesc').value.trim();
-        let imageUrl = paymentBarcodeSettings.image || '';
-
-        const fileInput = document.getElementById('paymentBarcodeFile');
-        if (fileInput.files.length) {
-            try {
-                imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
-            } catch(err) { showToast('خطأ في رفع الصورة', true); return; }
-        }
-
-        paymentBarcodeSettings = { enabled, title, description, image: imageUrl };
-        localStorage.setItem('viola_paymentBarcodeSettings', JSON.stringify(paymentBarcodeSettings));
-
-        document.getElementById('previewBarcodeStatus').textContent = enabled ? 'مفعل ✅' : 'معطل ❌';
-        document.getElementById('previewBarcodeStatus').style.color = enabled ? '#2ed573' : '#ff4757';
-        if (imageUrl) {
-            document.getElementById('paymentBarcodeImg').src = imageUrl;
-            document.getElementById('paymentBarcodePreview').style.display = 'block';
-            document.getElementById('previewBarcodeImage').src = imageUrl;
-            document.getElementById('previewBarcodeImg').style.display = 'block';
-        }
-
-        await saveSettingsToFirebase();
-    };
-
-    document.getElementById('paymentBarcodeFile').onchange = (e) => {
-        document.getElementById('paymentBarcodeFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`;
-    };
-
 </script>
-
 </body>
 </html>
