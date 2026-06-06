@@ -578,14 +578,14 @@
         container.innerHTML = filtered.map(p => `
             <div class="item-card"><div class="item-header"><div class="item-info"><img src="${p.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><strong>${escapeHtml(p.name)}</strong> - ${formatPrice(p.price)}$<span class="badge" style="background:#e91e63; color:white;">${p.code || 'بدون'}</span><span class="badge ${p.active?'badge-active':'badge-inactive'}">${p.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditProduct('${p.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleProduct('${p.id}')"><i class="fas fa-eye${p.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button></div></div>
             <div style="font-size:0.7rem; margin:5px 0;">القسم: ${catsMap[p.categoryId] || 'غير محدد'} | ${p.sizes?.length ? `📏 ${p.sizes.join(', ')}` : ''} ${p.colors?.length ? `🎨 ${p.colors.join(', ')}` : ''}</div>
-            <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="row-2" style="margin-top:8px;"><select id="editCat_${p.id}"><option value="">اختر القسم</option>${categories.map(c => `<option value="${c.id}" ${c.id === p.categoryId ? 'selected' : ''}>${c.name}</option>`).join('')}</select><select id="editSubcat_${p.id}"><option value="">اختر الفئة</option>${(categories.find(c => c.id === p.categoryId)?.subcategories ? Object.keys(categories.find(c => c.id === p.categoryId).subcategories).map(subId => { const sub = categories.find(c => c.id === p.categoryId).subcategories[subId]; return `<option value="${subId}" ${subId === p.subcategoryId ? 'selected' : ''}>${sub.name}</option>`; }).join('') : '')}</select></div><div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-ruler"></i> المقاسات</label><div id="editSizes_${p.id}" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;">${(p.sizes || []).map(s => `<span class="size-tag">${s} <button class="remove-tag" onclick="removeEditSize('${p.id}', '${s}')">✖</button></span>`).join('')}</div><div class="row-2"><input type="text" id="editSizeInput_${p.id}" placeholder="مثال: XL"><button class="btn btn-secondary" onclick="addEditSize('${p.id}')">+ إضافة</button></div></div><div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-palette"></i> الألوان</label><div id="editColors_${p.id}" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;">${(p.colors || []).map(c => `<span class="size-tag">${c} <button class="remove-tag" onclick="removeEditColor('${p.id}', '${c}')">✖</button></span>`).join('')}</div><div class="row-2"><input type="text" id="editColorInput_${p.id}" placeholder="مثال: أحمر"><button class="btn btn-secondary" onclick="addEditColor('${p.id}')">+ إضافة</button></div></div><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
+            <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="row-2" style="margin-top:8px;"><select id="editCat_${p.id}"><option value="">اختر القسم</option></select><select id="editSubcat_${p.id}"><option value="">اختر الفئة</option></select></div><div id="editSizesContainer_${p.id}"></div><div id="editColorsContainer_${p.id}"></div><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
         `).join('');
         products.forEach(p => { const fi = document.getElementById(`editImgFile_${p.id}`); if(fi) fi.onchange = (e) => { tempEditProductFile[p.id] = e.target.files[0]; showToast("تم اختيار صورة جديدة"); }; });
     }
     
     function updateNewCatOrder() {
         const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => (c.order !== undefined ? c.order : 0))) : -1;
-        const nextOrder = maxOrder + 2; // +2 because order is 0-based internally, display is 1-based
+        const nextOrder = maxOrder + 2;
         const input = document.getElementById('newCatOrder');
         if (input) input.value = nextOrder;
     }
@@ -634,13 +634,49 @@
     // ==================== Product Functions ====================
     window.toggleProduct = async (id) => { const prod = products.find(p=>p.id===id); prod.active = !prod.active; await saveAll(); };
     window.deleteProduct = async (id) => { products = products.filter(p=>p.id!==id); await saveAll(); };
-    window.openEditProduct = (id) => { document.getElementById(`editProduct_${id}`).classList.add('open'); const prod = products.find(p=>p.id===id); window.tempEditSizes[id] = [...(prod.sizes || [])]; window.tempEditColors[id] = [...(prod.colors || [])]; };
-    window.addEditSize = (id) => { const input = document.getElementById(`editSizeInput_${id}`); const size = input.value.trim(); if(!size || window.tempEditSizes[id].includes(size)) return; window.tempEditSizes[id].push(size); renderEditSizes(id); input.value = ""; };
-    window.removeEditSize = (id, size) => { window.tempEditSizes[id] = window.tempEditSizes[id].filter(s => s !== size); renderEditSizes(id); };
-    window.renderEditSizes = (id) => { const container = document.getElementById(`editSizes_${id}`); if(container) container.innerHTML = window.tempEditSizes[id].map(s => `<span class="size-tag">${s} <button class="remove-tag" onclick="removeEditSize('${id}', '${s}')">✖</button></span>`).join(''); };
-    window.addEditColor = (id) => { const input = document.getElementById(`editColorInput_${id}`); const color = input.value.trim(); if(!color || window.tempEditColors[id].includes(color)) return; window.tempEditColors[id].push(color); renderEditColors(id); input.value = ""; };
-    window.removeEditColor = (id, color) => { window.tempEditColors[id] = window.tempEditColors[id].filter(c => c !== color); renderEditColors(id); };
-    window.renderEditColors = (id) => { const container = document.getElementById(`editColors_${id}`); if(container) container.innerHTML = window.tempEditColors[id].map(c => `<span class="size-tag">${c} <button class="remove-tag" onclick="removeEditColor('${id}', '${c}')">✖</button></span>`).join(''); };
+    window.openEditProduct = (id) => { 
+        document.getElementById(`editProduct_${id}`).classList.add('open'); 
+        const prod = products.find(p=>p.id===id); 
+
+        const catSelect = document.getElementById(`editCat_${id}`);
+        if(catSelect) {
+            catSelect.innerHTML = '<option value="">اختر القسم</option>' + 
+                categories.map(c => '<option value="' + c.id + '"' + (c.id === prod.categoryId ? ' selected' : '') + '>' + c.name + '</option>').join('');
+        }
+
+        const subcatSelect = document.getElementById(`editSubcat_${id}`);
+        if(subcatSelect) {
+            const cat = categories.find(c => c.id === prod.categoryId);
+            let subOptions = '<option value="">اختر الفئة</option>';
+            if(cat && cat.subcategories) {
+                subOptions += Object.keys(cat.subcategories).map(subId => {
+                    const sub = cat.subcategories[subId];
+                    return '<option value="' + subId + '"' + (subId === prod.subcategoryId ? ' selected' : '') + '>' + sub.name + '</option>';
+                }).join('');
+            }
+            subcatSelect.innerHTML = subOptions;
+        }
+
+        window.tempEditSizes[id] = [...(prod.sizes || [])];
+        const sizesDiv = document.getElementById(`editSizesContainer_${id}`);
+        if(sizesDiv) {
+            sizesDiv.innerHTML = '<div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-ruler"></i> المقاسات</label><div id="editSizes_' + id + '" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;">' + 
+                window.tempEditSizes[id].map(s => '<span class="size-tag">' + s + ' <button class="remove-tag" onclick="removeEditSize('' + id + '', '' + s + '')">✖</button></span>').join('') + 
+                '</div><div class="row-2"><input type="text" id="editSizeInput_' + id + '" placeholder="مثال: XL"><button class="btn btn-secondary" onclick="addEditSize('' + id + '')">+ إضافة</button></div></div>';
+        }
+
+        window.tempEditColors[id] = [...(prod.colors || [])];
+        const colorsDiv = document.getElementById(`editColorsContainer_${id}`);
+        if(colorsDiv) {
+            colorsDiv.innerHTML = '<div style="background:#fff0f5; padding:12px; border-radius:16px; margin:12px 0;"><label><i class="fas fa-palette"></i> الألوان</label><div id="editColors_' + id + '" style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0;">' + 
+                window.tempEditColors[id].map(c => '<span class="size-tag">' + c + ' <button class="remove-tag" onclick="removeEditColor('' + id + '', '' + c + '')">✖</button></span>').join('') + 
+                '</div><div class="row-2"><input type="text" id="editColorInput_' + id + '" placeholder="مثال: أحمر"><button class="btn btn-secondary" onclick="addEditColor('' + id + '')">+ إضافة</button></div></div>';
+        }
+    };
+    window.addEditSize = (id) => { const input = document.getElementById('editSizeInput_' + id); if(!input) return; const size = input.value.trim(); if(!size || window.tempEditSizes[id].includes(size)) return; window.tempEditSizes[id].push(size); const container = document.getElementById('editSizes_' + id); if(container) container.innerHTML = window.tempEditSizes[id].map(s => '<span class="size-tag">' + s + ' <button class="remove-tag" onclick="removeEditSize(' + "'" + id + "'" + ', ' + "'" + s + "'" + ')">✖</button></span>').join(''); input.value = ""; };
+    window.removeEditSize = (id, size) => { window.tempEditSizes[id] = window.tempEditSizes[id].filter(s => s !== size); const container = document.getElementById('editSizes_' + id); if(container) container.innerHTML = window.tempEditSizes[id].map(s => '<span class="size-tag">' + s + ' <button class="remove-tag" onclick="removeEditSize(' + "'" + id + "'" + ', ' + "'" + s + "'" + ')">✖</button></span>').join(''); };
+    window.addEditColor = (id) => { const input = document.getElementById('editColorInput_' + id); if(!input) return; const color = input.value.trim(); if(!color || window.tempEditColors[id].includes(color)) return; window.tempEditColors[id].push(color); const container = document.getElementById('editColors_' + id); if(container) container.innerHTML = window.tempEditColors[id].map(c => '<span class="size-tag">' + c + ' <button class="remove-tag" onclick="removeEditColor(' + "'" + id + "'" + ', ' + "'" + c + "'" + ')">✖</button></span>').join(''); input.value = ""; };
+    window.removeEditColor = (id, color) => { window.tempEditColors[id] = window.tempEditColors[id].filter(c => c !== color); const container = document.getElementById('editColors_' + id); if(container) container.innerHTML = window.tempEditColors[id].map(c => '<span class="size-tag">' + c + ' <button class="remove-tag" onclick="removeEditColor(' + "'" + id + "'" + ', ' + "'" + c + "'" + ')">✖</button></span>').join(''); };
 
     window.updateProductImage = async (id) => { if(!tempEditProductFile[id]) return showToast("اختر صورة",true); const url = await uploadImageToCloudinary(tempEditProductFile[id]); const prod = products.find(p=>p.id===id); prod.image = url; await saveAll(); delete tempEditProductFile[id]; showToast("تم تحديث الصورة"); };
     window.updateProductData = async (id) => { const prod = products.find(p=>p.id===id); prod.name = document.getElementById(`editName_${id}`).value; prod.price = document.getElementById(`editPrice_${id}`).value; prod.oldprice = document.getElementById(`editOld_${id}`).value; prod.desc = document.getElementById(`editDesc_${id}`).value; let nc = document.getElementById(`editCode_${id}`).value.trim(); if(nc) prod.code = nc; const newCatId = document.getElementById(`editCat_${id}`).value; const newSubcatId = document.getElementById(`editSubcat_${id}`).value; if(newCatId) prod.categoryId = newCatId; if(newSubcatId) prod.subcategoryId = newSubcatId; prod.sizes = [...(window.tempEditSizes[id] || [])]; prod.colors = [...(window.tempEditColors[id] || [])]; await saveAll(); document.getElementById(`editProduct_${id}`).classList.remove('open'); showToast("تم تعديل المنتج"); };
