@@ -113,7 +113,7 @@ function showInvoicePreview(orderData) {
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
-            <button class="print-btn" onclick="window.print();"><i class="fas fa-print"></i> طباعة / تحميل الفاتورة</button>
+            
         </div>
     `;
 

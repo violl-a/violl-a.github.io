@@ -173,6 +173,7 @@
             font-size: 0.95rem;
         }
         .print-btn {
+            display: none;
             background: linear-gradient(135deg, #e91e63, #f06292);
             color: white;
             border: none;
@@ -246,20 +247,41 @@
                 font-size: 0.6rem;
             }
         }
-        @media print {
-            .invoice-preview-modal, .close-invoice, .print-btn {
-                display: none;
+                @media print {
+            .invoice-preview-modal {
+                position: static !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                background: white !important;
+                display: block !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .close-invoice {
+                display: none !important;
             }
             .invoice-preview-content {
-                margin: 0;
-                padding: 0;
-                max-width: 100%;
-                box-shadow: none;
-                border-radius: 0;
+                margin: 0 !important;
+                padding: 20px !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
             }
             .invoice-table-wrapper {
-                border: none;
-                overflow: visible;
+                border: 1px solid #f8bbd9 !important;
+                overflow: visible !important;
+            }
+            .invoice-table {
+                min-width: 100% !important;
+            }
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
         @media (max-width: 768px) { .sub-categories-grid { display: flex; overflow-x: auto; gap: 12px; flex-wrap: nowrap; } .sub-category-card { flex: 0 0 140px; padding: 16px 12px; } .sub-cat-icon { width: 40px; height: 40px; font-size: 1rem; } }
