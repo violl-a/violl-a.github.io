@@ -67,7 +67,7 @@ let cart = [];
 let coupons = [];
 let appliedCoupon = null;
 let currentFilter = 'all';
-let displayedCount = 12;
+let displayedCount = 8;
 let realtimeListeners = {};
 
 // DOM Elements
