@@ -157,6 +157,7 @@
     <div class="search-box" style="position:relative;"><i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#e91e63;z-index:2;"></i><input type="text" id="searchProducts" placeholder="ابحث بالاسم أو الرمز..." style="padding-right:36px;padding-left:36px;width:100%;border:none;background:transparent;padding-top:10px;padding-bottom:10px;margin:0;"><button type="button" id="clearSearchProducts" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;background:#fce4ec;border:none;border-radius:50%;color:#e91e63;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:0.75rem;z-index:2;" onclick="clearAdminSearch('searchProducts','clearSearchProducts')"><i class="fas fa-times"></i></button></div>
     <div id="productsStats" class="badge" style="background:#fce4ec; display:inline-block; margin-bottom:10px;"></div>
     <div id="productsList" class="items-list"></div>
+    <div id="adminLoadMore" style="text-align:center; margin:20px 0; display:none;"><button class="btn btn-secondary" onclick="loadMoreAdminProducts()"><i class="fas fa-spinner"></i> تحميل المزيد</button></div>
 </div>
 
 <!-- ==================== تبويب كوبونات الخصم ==================== -->
@@ -284,6 +285,8 @@
     let lastSearchText = "";
     let lastOrderSearchText = "";
     let tempSizes = [], tempColors = [];
+    let adminDisplayedCount = 20;
+    let adminAllProducts = [];
     let tempEditCatFile = null;
     let tempEditProductFile = {};
     
@@ -569,20 +572,31 @@
     function renderProducts() {
         const container = document.getElementById('productsList');
         const statsSpan = document.getElementById('productsStats');
+        const loadMoreDiv = document.getElementById('adminLoadMore');
         if (!container) return;
         let filtered = [...products];
         if (lastSearchText && lastSearchText.trim()) { const lower = lastSearchText.toLowerCase(); filtered = products.filter(p => p.name.toLowerCase().includes(lower) || (p.code && p.code.toLowerCase().includes(lower))); }
         statsSpan.innerHTML = `📦 ${filtered.length} منتج`;
-        if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد منتجات</div>'; return; }
+        if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد منتجات</div>'; if(loadMoreDiv) loadMoreDiv.style.display = 'none'; return; }
         const catsMap = Object.fromEntries(categories.map(c=>[c.id,c.name]));
-        container.innerHTML = filtered.map(p => `
+        const toShow = filtered.slice(0, adminDisplayedCount);
+        container.innerHTML = toShow.map(p => `
             <div class="item-card"><div class="item-header"><div class="item-info"><img src="${p.image}" class="item-img" style="width:50px; height:50px; object-fit:cover; border-radius:12px;"><strong>${escapeHtml(p.name)}</strong> - ${formatPrice(p.price)}$<span class="badge" style="background:#e91e63; color:white;">${p.code || 'بدون'}</span><span class="badge ${p.active?'badge-active':'badge-inactive'}">${p.active?'نشط':'مخفي'}</span></div><div class="item-actions"><button class="btn btn-sm btn-secondary" onclick="openEditProduct('${p.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-primary" onclick="toggleProduct('${p.id}')"><i class="fas fa-eye${p.active?'-slash':''}"></i></button><button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button></div></div>
             <div style="font-size:0.7rem; margin:5px 0;">القسم: ${catsMap[p.categoryId] || 'غير محدد'} | ${p.sizes?.length ? `📏 ${p.sizes.join(', ')}` : ''} ${p.colors?.length ? `🎨 ${p.colors.join(', ')}` : ''}</div>
             <div id="editProduct_${p.id}" class="edit-form"><div class="row-2"><input type="text" id="editName_${p.id}" value="${p.name}"><input type="text" id="editPrice_${p.id}" value="${p.price}"></div><div class="row-2"><input type="text" id="editOld_${p.id}" value="${p.oldprice||''}"><input type="text" id="editCode_${p.id}" value="${p.code||''}"></div><textarea id="editDesc_${p.id}" rows="2">${p.desc||''}</textarea><div class="row-2" style="margin-top:8px;"><select id="editCat_${p.id}"><option value="">اختر القسم</option></select><select id="editSubcat_${p.id}"><option value="">اختر الفئة</option></select></div><div id="editSizes_${p.id}"></div><div id="editColors_${p.id}"></div><div class="file-upload-btn" onclick="document.getElementById('editImgFile_${p.id}').click()"><i class="fas fa-cloud-upload-alt"></i> تغيير الصورة</div><input type="file" id="editImgFile_${p.id}" style="display:none"><div class="row-2" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="updateProductImage('${p.id}')">حفظ الصورة</button><button class="btn btn-sm btn-primary" onclick="updateProductData('${p.id}')">حفظ البيانات</button></div></div></div>
         `).join('');
+        if(loadMoreDiv) {
+            if(toShow.length < filtered.length) loadMoreDiv.style.display = 'block';
+            else loadMoreDiv.style.display = 'none';
+        }
         products.forEach(p => { const fi = document.getElementById(`editImgFile_${p.id}`); if(fi) fi.onchange = (e) => { tempEditProductFile[p.id] = e.target.files[0]; showToast("تم اختيار صورة جديدة"); }; });
     }
-    
+
+    window.loadMoreAdminProducts = () => {
+        adminDisplayedCount += 20;
+        renderProducts();
+    };
+
     function updateNewCatOrder() {
         const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => (c.order !== undefined ? c.order : 0))) : -1;
         const nextOrder = maxOrder + 2;
@@ -930,7 +944,7 @@
             
             setupRealtimeListeners();
             
-            document.getElementById('searchProducts')?.addEventListener('input', (e) => { lastSearchText = e.target.value; renderProducts(); });
+            document.getElementById('searchProducts')?.addEventListener('input', (e) => { lastSearchText = e.target.value; adminDisplayedCount = 20; renderProducts(); });
             document.getElementById('searchOrders')?.addEventListener('input', (e) => { lastOrderSearchText = e.target.value; renderOrders(); });
             
             // تحميل الإعدادات من Firebase وعرضها في واجهة الإعدادات

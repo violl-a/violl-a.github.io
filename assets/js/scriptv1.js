@@ -67,7 +67,7 @@ let cart = [];
 let coupons = [];
 let appliedCoupon = null;
 let currentFilter = 'all';
-let displayedCount = 8;
+let displayedCount = 12;
 let realtimeListeners = {};
 
 // DOM Elements
@@ -135,7 +135,7 @@ function showInvoicePreview(orderData) {
             <tr>
                 <td data-label="#"><span>${idx+1}</span></td>
                 <td data-label="الصورة"><img src="${item.image || 'https://via.placeholder.com/50'}" alt="${item.name}" style="width:45px; height:45px; object-fit:cover; border-radius:8px;"></td>
-                <td data-label="المنتج" class="product-name">${item.name}${item.selectedSize ? `<br><small>مقاس: ${item.selectedSize}</small>` : ''}${item.selectedColor ? `<br><small>لون: ${item.selectedColor}</small>` : ''}</td>
+                <td data-label="المنتج">${item.name}${item.selectedSize ? `<br><small>مقاس: ${item.selectedSize}</small>` : ''}${item.selectedColor ? `<br><small>لون: ${item.selectedColor}</small>` : ''}</td>
                 <td data-label="الرمز">${item.code || 'بدون رمز'}</td>
                 <td data-label="العدد">${item.qty}</td>
                 <td data-label="السعر">${formatPrice(item.price)} $</td>
@@ -157,23 +157,21 @@ function showInvoicePreview(orderData) {
                 <p><strong>العنوان:</strong> ${orderData.customer.address}</p>
                 ${orderData.customer.notes ? `<p><strong>ملاحظات:</strong> ${orderData.customer.notes}</p>` : ''}
             </div>
-            <div class="invoice-table-wrapper">
-                <table class="invoice-table">
-                    <thead>
-                        <tr><th>#</th><th>الصورة</th><th>المنتج</th><th>الرمز</th><th>العدد</th><th>السعر</th><th>الإجمالي</th></tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHTML}
-                    </tbody>
-                </table>
-            </div>
+            <table class="invoice-table">
+                <thead>
+                    <tr><th>#</th><th>الصورة</th><th>المنتج</th><th>الرمز</th><th>العدد</th><th>السعر</th><th>الإجمالي</th></tr>
+                </thead>
+                <tbody>
+                    ${itemsHTML}
+                </tbody>
+            </table>
             <div class="invoice-totals">
                 <p>المجموع الفرعي: ${formatPrice(subtotal)} $</p>
                 ${discount > 0 ? `<p style="color:#2ed573;">الخصم (${discountMessage}): - ${formatPrice(discount)} $</p>` : ''}
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
-            
+            <button class="print-btn" onclick="window.print();"><i class="fas fa-print"></i> طباعة / تحميل الفاتورة</button>
         </div>
     `;
 
@@ -1296,7 +1294,7 @@ if (bottomCartBtn) bottomCartBtn.addEventListener('click', openCart);
 if (bottomContactBtn) bottomContactBtn.addEventListener('click', openContactModal);
 if (closeContactModal) closeContactModal.addEventListener('click', closeContactModalFn);
 if (contactModalOverlay) contactModalOverlay.addEventListener('click', closeContactModalFn);
-if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { loadMoreBtn.classList.add('loading'); setTimeout(() => { displayedCount += 4; renderProducts(currentFilter, searchInput ? searchInput.value : ''); loadMoreBtn.classList.remove('loading'); }, 600); });
+if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { loadMoreBtn.classList.add('loading'); setTimeout(() => { displayedCount += 12; renderProducts(currentFilter, searchInput ? searchInput.value : ''); loadMoreBtn.classList.remove('loading'); }, 600); });
 
 // ============================================
 // ORDER FORM - FULLY WORKING WITH CUSTOM CONFIRM
