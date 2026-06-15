@@ -118,6 +118,27 @@ console.log = function(...args) {
     originalConsoleLog.apply(console, args);
 };
 
+
+// ============================================
+// GIFT WRAP FUNCTIONS
+// ============================================
+function selectGiftWrap(value) {
+    selectedGiftWrap = (value === 'yes');
+    document.querySelectorAll('.gift-wrap-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+    const input = document.getElementById('giftWrapInput');
+    if (input) input.value = value;
+    updateCartUI();
+}
+
+function updateGiftWrapPriceLabel() {
+    const label = document.getElementById('giftWrapPriceLabel');
+    if (label && giftWrapSettings.price > 0) {
+        label.textContent = '+' + formatPrice(giftWrapSettings.price) + ' $';
+    }
+}
+
 // ============================================
 // INVOICE PREVIEW FUNCTION (Responsive Table)
 // ============================================
@@ -126,7 +147,7 @@ function showInvoicePreview(orderData) {
     const content = document.getElementById('invoicePreviewContent');
     if (!modal || !content) return;
 
-    const { subtotal, discount, finalTotal } = calculateTotals();
+    const { subtotal, discount, finalTotal, giftWrapPrice } = calculateTotals();
     const discountMessage = appliedCoupon ? (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value}$`) : '';
 
     let itemsHTML = '';
@@ -168,6 +189,7 @@ function showInvoicePreview(orderData) {
             <div class="invoice-totals">
                 <p>المجموع الفرعي: ${formatPrice(subtotal)} $</p>
                 ${discount > 0 ? `<p style="color:#2ed573;">الخصم (${discountMessage}): - ${formatPrice(discount)} $</p>` : ''}
+                ${giftWrapPrice > 0 ? `<p style="color:var(--primary);"><i class="fas fa-gift"></i> تغليف الهدية: + ${formatPrice(giftWrapPrice)} $</p>` : ''}
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
@@ -474,6 +496,10 @@ async function submitOrderWithPayment() {
     if (!pendingOrderData) return;
 
     pendingOrderData.paymentMethod = selectedPaymentMethod;
+    pendingOrderData.giftWrap = {
+        selected: selectedGiftWrap,
+        price: (selectedGiftWrap && giftWrapSettings.price > 0) ? parseFloat(giftWrapSettings.price) : 0
+    };
 
     if (selectedPaymentMethod === 'manual') {
         const manualMethodInput = document.getElementById('manualPaymentMethod');
@@ -500,12 +526,18 @@ async function submitOrderWithPayment() {
             showToast("حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى", true);
         } else {
             if (pendingOrderData.coupon && pendingOrderData.coupon.id) {
-                db.ref(`coupons/${pendingOrderData.coupon.id}`).once('value', function(snapshot) {
-                    const currentData = snapshot.val();
-                    const currentUsedCount = currentData?.usedCount || 0;
-                    const newUsedCount = currentUsedCount + 1;
-                    db.ref(`coupons/${pendingOrderData.coupon.id}`).update({ usedCount: newUsedCount });
+                // ========== التعديل الأساسي هنا ==========
+                // استخدام transaction لإنشاء usedCount إذا لم يكن موجوداً وزيادته
+                const couponRef = db.ref(`coupons/${pendingOrderData.coupon.id}`);
+                couponRef.child('usedCount').transaction(function(current) {
+                    // إذا كان current غير موجود (null أو undefined) نبدأ من 0
+                    return (current || 0) + 1;
+                }).then(() => {
+                    console.log('✅ تم تحديث usedCount للكوبون');
+                }).catch((err) => {
+                    console.error('❌ فشل تحديث usedCount:', err);
                 });
+                // =====================================
             }
 
             cart = [];
@@ -599,7 +631,7 @@ function setupRealtimeListeners() {
             if (appliedCoupon) {
                 const updatedCoupon = coupons.find(c => c.id === appliedCoupon.id);
                 if (updatedCoupon) {
-                    appliedCoupon = { ...appliedCoupon, usedCount: updatedCoupon.usedCount };
+                    appliedCoupon = { ...appliedCoupon, usedCount: updatedCoupon.usedCount || 0 };
                     saveCouponToLocal();
                     updateCartUI();
                 } else {
@@ -608,6 +640,16 @@ function setupRealtimeListeners() {
                     updateCartUI();
                 }
             }
+        }
+    });
+
+    // Gift Wrap Settings Realtime Listener
+    if (realtimeListeners.giftWrap) db.ref('settings/giftWrap').off('value', realtimeListeners.giftWrap);
+    realtimeListeners.giftWrap = db.ref('settings/giftWrap').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            giftWrapSettings = snapshot.val();
+            updateGiftWrapPriceLabel();
+            updateCartUI();
         }
     });
 }
@@ -672,16 +714,17 @@ function renderNavbar() {
 // ============================================
 // Settings Variables
 // ============================================
-let giftBoxSettings = { threshold: 0, message: '' };
+let giftWrapSettings = { price: 2, enabled: true };
+let selectedGiftWrap = false;
 let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
 
 async function loadSettings() {
     try {
-        const localGift = localStorage.getItem('viola_giftBoxSettings');
+        const localGift = localStorage.getItem('viola_giftWrapSettings');
         const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
 
         if (localGift) {
-            try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
+            try { giftWrapSettings = JSON.parse(localGift); } catch(e) {}
         }
         if (localBarcode) {
             try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
@@ -689,15 +732,16 @@ async function loadSettings() {
 
         try {
             const [giftSnap, barcodeSnap] = await Promise.all([
-                db.ref('settings/giftBox').once('value'),
+                db.ref('settings/giftWrap').once('value'),
                 db.ref('settings/paymentBarcode').once('value')
             ]);
-            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+            if (giftSnap.exists()) giftWrapSettings = giftSnap.val();
             if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
         } catch(fbErr) {
             console.log('Firebase settings load failed, using localStorage:', fbErr.message);
         }
         console.log('✅ Payment Barcode Settings loaded:', paymentBarcodeSettings);
+        console.log('✅ Gift Wrap Settings loaded:', giftWrapSettings);
     } catch(err) { console.error('Error loading settings:', err); }
 }
 
@@ -864,11 +908,12 @@ function updateQty(index, change) {
 }
 
 // ============================================
-// COUPON SYSTEM
+// COUPON SYSTEM - FIXED for missing usedCount
 // ============================================
 function isCouponValid(coupon, subtotal) {
     if (!coupon) return false;
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
+    const usedCount = coupon.usedCount || 0;
+    if (coupon.usageLimit && usedCount >= coupon.usageLimit) return false;
     if (coupon.expiryDate && Date.now() > coupon.expiryDate) return false;
     if (coupon.minAmount && subtotal < coupon.minAmount) return false;
     return true;
@@ -898,8 +943,9 @@ function calculateTotals() {
     const discount = getCouponDiscount();
     const discountMessage = appliedCoupon ? 
         (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% خصم` : `${appliedCoupon.value}$ خصم`) : '';
-    const finalTotal = subtotal - discount;
-    return { subtotal, discount, discountMessage, finalTotal };
+    const giftWrapPrice = (selectedGiftWrap && giftWrapSettings.price > 0) ? parseFloat(giftWrapSettings.price) : 0;
+    const finalTotal = subtotal - discount + giftWrapPrice;
+    return { subtotal, discount, discountMessage, finalTotal, giftWrapPrice };
 }
 
 function applyCoupon(code) {
@@ -909,7 +955,8 @@ function applyCoupon(code) {
         return false;
     }
     const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.qty), 0);
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+    const usedCount = coupon.usedCount || 0;
+    if (coupon.usageLimit && usedCount >= coupon.usageLimit) {
         showToast(`❌ تم استخدام هذا الكود ${coupon.usageLimit} مرة`, true);
         return false;
     }
@@ -926,7 +973,7 @@ function applyCoupon(code) {
         code: coupon.code,
         type: coupon.type,
         value: coupon.value,
-        usedCount: coupon.usedCount || 0,
+        usedCount: usedCount,
         usageLimit: coupon.usageLimit,
         minAmount: coupon.minAmount,
         expiryDate: coupon.expiryDate
@@ -934,7 +981,7 @@ function applyCoupon(code) {
     saveCouponToLocal();
     updateCartUI();
     const discountValue = coupon.type === 'percentage' ? `${coupon.value}%` : `${coupon.value}$`;
-    const remaining = coupon.usageLimit ? (coupon.usageLimit - (coupon.usedCount || 0)) : 'غير محدود';
+    const remaining = coupon.usageLimit ? (coupon.usageLimit - usedCount) : 'غير محدود';
     showToast(`✅ تم تطبيق كود ${coupon.code} (خصم ${discountValue}) - تبقى ${remaining} استخدام`);
     return true;
 }
@@ -1031,17 +1078,14 @@ function updateCartUI() {
     }
     if (orderTotal) orderTotal.textContent = formatPrice(finalTotal) + ' $';
 
-    // Gift Box Message
-    const giftBoxDiv = document.getElementById('giftBoxMessage');
-    const giftBoxText = document.getElementById('giftBoxMessageText');
-    if (giftBoxDiv && giftBoxText && giftBoxSettings.threshold > 0) {
-        if (finalTotal < giftBoxSettings.threshold) {
-            let msg = giftBoxSettings.message || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
-            msg = msg.replace('${threshold}', giftBoxSettings.threshold);
-            giftBoxText.textContent = msg;
-            giftBoxDiv.style.display = 'block';
+    // Gift Wrap Row in Order Summary
+    const orderGiftWrap = document.getElementById('orderGiftWrap');
+    if (orderGiftWrap) {
+        if (selectedGiftWrap && giftWrapSettings.price > 0) {
+            orderGiftWrap.innerHTML = `<span><i class="fas fa-gift" style="color:var(--primary);"></i> تغليف الهدية:</span><span style="color:var(--primary); font-weight:800;">+ ${formatPrice(giftWrapSettings.price)} $</span>`;
+            orderGiftWrap.style.display = 'flex';
         } else {
-            giftBoxDiv.style.display = 'none';
+            orderGiftWrap.style.display = 'none';
         }
     }
 }
@@ -1438,6 +1482,7 @@ window.openProductOptions = openProductOptions;
 window.closeOptionsModal = closeOptionsModal;
 window.selectPaymentMethod = window.selectPaymentMethod;
 window.closeInvoicePreview = closeInvoicePreview;
+window.selectGiftWrap = selectGiftWrap;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {

@@ -27,7 +27,8 @@ let appliedCoupon = null;
 let currentCategoryId = '';
 let currentSubcategoryId = 'all';
 let currentSort = 'random';
-let giftBoxSettings = { threshold: 0, message: '' };
+let giftWrapSettings = { price: 2, enabled: true };
+let selectedGiftWrap = false;
 let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
 let searchQueryCategory = '';
 let realtimeListeners = {};
@@ -58,6 +59,27 @@ console.log = function(...args) {
 function getUrlParam(param) { return new URLSearchParams(window.location.search).get(param); }
 function shuffleArray(array) { const arr = [...array]; for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
+
+// ============================================
+// GIFT WRAP FUNCTIONS
+// ============================================
+function selectGiftWrap(value) {
+    selectedGiftWrap = (value === 'yes');
+    document.querySelectorAll('.gift-wrap-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+    const input = document.getElementById('giftWrapInput');
+    if (input) input.value = value;
+    updateCartUI();
+}
+
+function updateGiftWrapPriceLabel() {
+    const label = document.getElementById('giftWrapPriceLabel');
+    if (label && giftWrapSettings.price > 0) {
+        label.textContent = '+' + formatPrice(giftWrapSettings.price) + ' $';
+    }
+}
+
 // ============================================
 // INVOICE PREVIEW FUNCTION (New Feature)
 // ============================================
@@ -66,7 +88,7 @@ function showInvoicePreview(orderData) {
     const content = document.getElementById('invoicePreviewContent');
     if (!modal || !content) return;
 
-    const { subtotal, discount, finalTotal } = calculateTotals();
+    const { subtotal, discount, finalTotal, giftWrapPrice } = calculateTotals();
     const discountMessage = appliedCoupon ? (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value}$`) : '';
 
     let itemsHTML = '';
@@ -110,6 +132,7 @@ function showInvoicePreview(orderData) {
             <div class="invoice-totals">
                 <p>المجموع الفرعي: ${formatPrice(subtotal)} $</p>
                 ${discount > 0 ? `<p style="color:#2ed573;">الخصم (${discountMessage}): - ${formatPrice(discount)} $</p>` : ''}
+                ${giftWrapPrice > 0 ? `<p style="color:var(--primary);"><i class="fas fa-gift"></i> تغليف الهدية: + ${formatPrice(giftWrapPrice)} $</p>` : ''}
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
@@ -416,6 +439,10 @@ async function submitOrderWithPayment() {
     if (!pendingOrderData) return;
 
     pendingOrderData.paymentMethod = selectedPaymentMethod;
+    pendingOrderData.giftWrap = {
+        selected: selectedGiftWrap,
+        price: (selectedGiftWrap && giftWrapSettings.price > 0) ? parseFloat(giftWrapSettings.price) : 0
+    };
 
     if (selectedPaymentMethod === 'manual') {
         const manualMethodInput = document.getElementById('manualPaymentMethod');
@@ -553,6 +580,16 @@ function setupRealtimeListeners() {
             }
         }
     });
+
+    // Gift Wrap Settings Realtime Listener
+    if (realtimeListeners.giftWrap) db.ref('settings/giftWrap').off('value', realtimeListeners.giftWrap);
+    realtimeListeners.giftWrap = db.ref('settings/giftWrap').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            giftWrapSettings = snapshot.val();
+            updateGiftWrapPriceLabel();
+            updateCartUI();
+        }
+    });
 }
 
 // ============================================
@@ -617,11 +654,11 @@ function renderNavbar() {
 // ============================================
 async function loadSettings() {
     try {
-        const localGift = localStorage.getItem('viola_giftBoxSettings');
+        const localGift = localStorage.getItem('viola_giftWrapSettings');
         const localBarcode = localStorage.getItem('viola_paymentBarcodeSettings');
 
         if (localGift) {
-            try { giftBoxSettings = JSON.parse(localGift); } catch(e) {}
+            try { giftWrapSettings = JSON.parse(localGift); } catch(e) {}
         }
         if (localBarcode) {
             try { paymentBarcodeSettings = JSON.parse(localBarcode); } catch(e) {}
@@ -629,10 +666,10 @@ async function loadSettings() {
 
         try {
             const [giftSnap, barcodeSnap] = await Promise.all([
-                db.ref('settings/giftBox').once('value'),
+                db.ref('settings/giftWrap').once('value'),
                 db.ref('settings/paymentBarcode').once('value')
             ]);
-            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+            if (giftSnap.exists()) giftWrapSettings = giftSnap.val();
             if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
         } catch(fbErr) {
             console.log('Firebase settings load failed, using localStorage:', fbErr.message);
@@ -756,8 +793,9 @@ function calculateTotals() {
     const discount = getCouponDiscount();
     const discountMessage = appliedCoupon ? 
         (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% خصم` : `${appliedCoupon.value}$ خصم`) : '';
-    const finalTotal = subtotal - discount;
-    return { subtotal, discount, discountMessage, finalTotal };
+    const giftWrapPrice = (selectedGiftWrap && giftWrapSettings.price > 0) ? parseFloat(giftWrapSettings.price) : 0;
+    const finalTotal = subtotal - discount + giftWrapPrice;
+    return { subtotal, discount, discountMessage, finalTotal, giftWrapPrice };
 }
 
 function applyCoupon(code) {
@@ -886,17 +924,14 @@ function updateCartUI() {
     }
     if (orderTotal) orderTotal.textContent = formatPrice(finalTotal) + ' $';
 
-    // Gift Box Message
-    const giftBoxDiv = document.getElementById('giftBoxMessage');
-    const giftBoxText = document.getElementById('giftBoxMessageText');
-    if (giftBoxDiv && giftBoxText && giftBoxSettings.threshold > 0) {
-        if (finalTotal < giftBoxSettings.threshold) {
-            let msg = giftBoxSettings.message || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
-            msg = msg.replace('${threshold}', giftBoxSettings.threshold);
-            giftBoxText.textContent = msg;
-            giftBoxDiv.style.display = 'block';
+    // Gift Wrap Row in Order Summary
+    const orderGiftWrap = document.getElementById('orderGiftWrap');
+    if (orderGiftWrap) {
+        if (selectedGiftWrap && giftWrapSettings.price > 0) {
+            orderGiftWrap.innerHTML = `<span><i class="fas fa-gift" style="color:var(--primary);"></i> تغليف الهدية:</span><span style="color:var(--primary); font-weight:800;">+ ${formatPrice(giftWrapSettings.price)} $</span>`;
+            orderGiftWrap.style.display = 'flex';
         } else {
-            giftBoxDiv.style.display = 'none';
+            orderGiftWrap.style.display = 'none';
         }
     }
 }
@@ -1403,6 +1438,7 @@ window.openProductOptions = openProductOptions;
 window.closeOptionsModal = closeOptionsModal;
 window.selectPaymentMethod = window.selectPaymentMethod;
 window.closeInvoicePreview = closeInvoicePreview;
+window.selectGiftWrap = selectGiftWrap;
 
 // ============================================
 // CLEAR SEARCH BUTTON FUNCTIONALITY

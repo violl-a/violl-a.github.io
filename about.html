@@ -429,11 +429,28 @@
                     <div class="summary-row"><span>عدد المنتجات:</span><span id="orderItemCount">0</span></div>
                     <div class="summary-row"><span>المجموع الفرعي:</span><span id="orderSubtotal">0 $</span></div>
                     <div class="summary-row"><span>التوصيل:</span><span id="shippingCost">مدفوع (يتم حسابه عند التوصيل)</span></div>
+                    <div class="summary-row" id="orderGiftWrap" style="display:none;"><span><i class="fas fa-gift" style="color:#e91e63;"></i> تغليف الهدية:</span><span id="orderGiftWrapValue">0 $</span></div>
                     <div class="summary-row total"><span>الإجمالي:</span><span id="orderTotal">0 $</span></div>
                 </div>
-                <div id="giftBoxMessage" class="gift-box-message" style="display:none; background:#fff0f5; border-right:4px solid #e91e63; padding:12px 16px; border-radius:12px; margin:12px 0; font-size:0.85rem; color:#4a1a3a;">
-                    <i class="fas fa-gift" style="color:#e91e63; margin-left:8px;"></i>
-                    <span id="giftBoxMessageText"></span>
+                <div class="form-group gift-wrap-group">
+                    <label><i class="fas fa-gift"></i> خيار التغليف <span style="color:#e91e63;">*</span></label>
+                    <div class="gift-wrap-options">
+                        <div class="gift-wrap-option selected" data-value="no" onclick="selectGiftWrap('no')">
+                            <div class="gift-wrap-check"><i class="fas fa-check"></i></div>
+                            <div class="gift-wrap-info">
+                                <span class="gift-wrap-title">بدون تغليف</span>
+                                <span class="gift-wrap-price">مجاني</span>
+                            </div>
+                        </div>
+                        <div class="gift-wrap-option" data-value="yes" onclick="selectGiftWrap('yes')">
+                            <div class="gift-wrap-check"><i class="fas fa-check"></i></div>
+                            <div class="gift-wrap-info">
+                                <span class="gift-wrap-title">مع تغليف هدية</span>
+                                <span class="gift-wrap-price" id="giftWrapPriceLabel">+2.00 $</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="giftWrapInput" name="giftWrap" value="no" required>
                 </div>
                 <div class="payment-note">
                     <i class="fas fa-info-circle"></i>

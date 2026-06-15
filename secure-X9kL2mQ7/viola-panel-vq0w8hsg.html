@@ -183,19 +183,13 @@
 <!-- ==================== تبويب الإعدادات ==================== -->
 <div id="tabSettings" class="tab-content">
     <div class="form-card">
-        <h3><i class="fas fa-gift"></i> إعدادات التغليف والهدايا</h3>
-        <div class="row-2">
-            <div class="form-group">
-                <label><i class="fas fa-box"></i> الحد الأدنى للتغليف المجاني (بالدولار)</label>
-                <input type="number" id="giftBoxThreshold" placeholder="مثال: 50" min="0" step="1">
-                <small style="color:#b08a9e; font-size:0.7rem;">إذا كان المجموع أقل من هذا المبلغ، سيظهر للمستخدم رسالة أن التغليف في بوكس غير متوفر</small>
-            </div>
-            <div class="form-group">
-                <label><i class="fas fa-comment"></i> رسالة التنبيه عند عدم توفر التغليف</label>
-                <input type="text" id="giftBoxMessage" placeholder="عبارة التنبيه..." value="عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁">
-            </div>
+        <h3><i class="fas fa-gift"></i> إعدادات تغليف الهدايا</h3>
+        <div class="form-group">
+            <label><i class="fas fa-tag"></i> سعر تغليف الهدية (بالدولار)</label>
+            <input type="number" id="giftWrapPrice" placeholder="مثال: 2" min="0" step="0.5" value="2">
+            <small style="color:#b08a9e; font-size:0.7rem;">سعر تغليف الهدية الإضافي الذي يظهر للعميل عند اختيار "مع تغليف"</small>
         </div>
-        <button id="saveGiftSettingsBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> حفظ إعدادات التغليف</button>
+        <button id="saveGiftWrapBtn" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> حفظ سعر التغليف</button>
     </div>
 
     <div class="form-card">
@@ -231,8 +225,8 @@
     <div class="item-card" style="background:#fff0f5;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
             <i class="fas fa-gift" style="color:#e91e63; font-size:1.2rem;"></i>
-            <strong>الحد الأدنى للتغليف المجاني:</strong>
-            <span id="previewGiftThreshold" style="color:#e91e63; font-weight:bold;">غير محدد</span>
+            <strong>سعر تغليف الهدية:</strong>
+            <span id="previewGiftWrapPrice" style="color:#e91e63; font-weight:bold;">2.00 $</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
             <i class="fas fa-qrcode" style="color:#e91e63; font-size:1.2rem;"></i>
@@ -1134,22 +1128,22 @@
     }
     
     // ==================== إعدادات التغليف والباركود ====================
-    let giftBoxSettings = { threshold: 0, message: '' };
+    let giftWrapSettings = { price: 2, enabled: true };
     let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
     
     async function loadSettingsFromFirebase() {
         try {
             const [giftSnap, barcodeSnap] = await Promise.all([
-                db.ref('settings/giftBox').once('value'),
+                db.ref('settings/giftWrap').once('value'),
                 db.ref('settings/paymentBarcode').once('value')
             ]);
-            if (giftSnap.exists()) giftBoxSettings = giftSnap.val();
+            if (giftSnap.exists()) giftWrapSettings = giftSnap.val();
             if (barcodeSnap.exists()) paymentBarcodeSettings = barcodeSnap.val();
             
             // تحديث واجهة المستخدم
-            document.getElementById('giftBoxThreshold').value = giftBoxSettings.threshold || '';
-            document.getElementById('giftBoxMessage').value = giftBoxSettings.message || '';
-            document.getElementById('previewGiftThreshold').textContent = (giftBoxSettings.threshold || 0) + ' $';
+            document.getElementById('giftWrapPrice').value = giftWrapSettings.price || 2;
+            
+            document.getElementById('previewGiftWrapPrice').textContent = (giftWrapSettings.price || 2).toFixed(2) + ' $';
             
             document.getElementById('paymentBarcodeEnabled').value = paymentBarcodeSettings.enabled ? 'true' : 'false';
             document.getElementById('paymentBarcodeTitle').value = paymentBarcodeSettings.title || '';
@@ -1165,19 +1159,18 @@
         } catch(err) { console.error('Error loading settings from Firebase:', err); }
     }
     
-    async function saveGiftSettings() {
-        const threshold = parseFloat(document.getElementById('giftBoxThreshold').value) || 0;
-        const message = document.getElementById('giftBoxMessage').value.trim() || 'عذراً، التغليف في بوكس هدية متاح فقط للطلبات بقيمة ${threshold} أو أكثر 🎁';
-        giftBoxSettings = { threshold, message };
+    async function saveGiftWrapSettings() {
+        const price = parseFloat(document.getElementById('giftWrapPrice').value) || 2;
+        giftWrapSettings = { price: price, enabled: true };
         try {
-            await db.ref('settings/giftBox').set(giftBoxSettings);
-            localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
+            await db.ref('settings/giftWrap').set(giftWrapSettings);
+            localStorage.setItem('viola_giftWrapSettings', JSON.stringify(giftWrapSettings));
             showToast('✅ تم حفظ إعدادات التغليف في Firebase و localStorage');
         } catch(err) {
             showToast('⚠️ فشل الحفظ في Firebase، تم الحفظ محلياً فقط', true);
-            localStorage.setItem('viola_giftBoxSettings', JSON.stringify(giftBoxSettings));
+            localStorage.setItem('viola_giftWrapSettings', JSON.stringify(giftWrapSettings));
         }
-        document.getElementById('previewGiftThreshold').textContent = threshold + ' $';
+        document.getElementById('previewGiftWrapPrice').textContent = price.toFixed(2) + ' $';
     }
     
     async function savePaymentBarcode() {
@@ -1220,7 +1213,7 @@
         }
     }
     
-    document.getElementById('saveGiftSettingsBtn').onclick = saveGiftSettings;
+    document.getElementById('saveGiftWrapBtn').onclick = saveGiftWrapSettings;
     document.getElementById('savePaymentBarcodeBtn').onclick = savePaymentBarcode;
     document.getElementById('paymentBarcodeFile').onchange = (e) => {
         document.getElementById('paymentBarcodeFileName').innerHTML = `📁 ${e.target.files[0]?.name || ''}`;
