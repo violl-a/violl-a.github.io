@@ -69,12 +69,19 @@
             .invoice-table th, .invoice-table td { font-size: 0.65rem; padding: 6px 4px; }
             .invoice-table td img { width: 30px; height: 30px; }
         }
+        
+        /* Cache status indicator */
+        .cache-status { position: fixed; bottom: 70px; right: 16px; background: rgba(0,0,0,0.7); color: white; padding: 5px 12px; border-radius: 30px; font-size: 0.7rem; z-index: 1000; direction: ltr; }
+        .refresh-cache-btn { background: #e91e63; border: none; color: white; padding: 3px 8px; border-radius: 20px; margin-left: 5px; cursor: pointer; font-size: 0.65rem; }
     </style>
 </head>
 <body>
 <div class="admin-header">
     <h1><i class="fas fa-crown"></i> لوحة التحكم - ڤيولا</h1>
-    <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+    <div style="display: flex; gap: 10px;">
+        <button id="refreshCacheBtn" class="logout-btn" style="background: #ffa502;"><i class="fas fa-sync-alt"></i> تحديث</button>
+        <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+    </div>
 </div>
 
 <div class="tabs">
@@ -240,6 +247,7 @@
 
 <div class="footer-credit">💜 تم التصميم بواسطة <strong>Ahmad Kllawe</strong> © 2026</div>
 <div id="adminToast" class="toast"></div>
+<div id="cacheStatus" class="cache-status"><i class="fas fa-database"></i> جاري التحميل...</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -278,6 +286,105 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
+    
+    // ============================================
+    // SMART CACHE SYSTEM - تسريع تحميل لوحة التحكم
+    // ============================================
+    
+    const CacheManager = {
+        // مدة صلاحية الكاش (بالمللي ثانية) - 10 دقائق
+        CACHE_DURATION: 10 * 60 * 1000,
+        
+        // حفظ البيانات في localStorage مع وقت التخزين
+        set(key, data) {
+            try {
+                const cacheItem = {
+                    data: data,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(`viola_cache_${key}`, JSON.stringify(cacheItem));
+                return true;
+            } catch(e) { 
+                console.warn('Cache save failed:', e);
+                return false;
+            }
+        },
+        
+        // استرجاع البيانات من localStorage
+        get(key) {
+            try {
+                const cached = localStorage.getItem(`viola_cache_${key}`);
+                if (!cached) return null;
+                
+                const cacheItem = JSON.parse(cached);
+                const isExpired = (Date.now() - cacheItem.timestamp) > this.CACHE_DURATION;
+                
+                if (isExpired) {
+                    localStorage.removeItem(`viola_cache_${key}`);
+                    return null;
+                }
+                
+                return cacheItem.data;
+            } catch(e) { 
+                return null;
+            }
+        },
+        
+        // مسح الكاش بالكامل
+        clearAll() {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('viola_cache_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+        },
+        
+        // مسح كاش محدد
+        clear(key) {
+            localStorage.removeItem(`viola_cache_${key}`);
+        },
+        
+        // الحصول على وقت آخر تحديث
+        getLastUpdateTime(key) {
+            try {
+                const cached = localStorage.getItem(`viola_cache_${key}`);
+                if (!cached) return null;
+                const cacheItem = JSON.parse(cached);
+                return cacheItem.timestamp;
+            } catch(e) {
+                return null;
+            }
+        }
+    };
+    
+    // تحديث مؤشر حالة الكاش
+    function updateCacheStatus() {
+        const cacheDiv = document.getElementById('cacheStatus');
+        if (!cacheDiv) return;
+        
+        const lastUpdate = CacheManager.getLastUpdateTime('allData');
+        if (lastUpdate) {
+            const date = new Date(lastUpdate);
+            const timeStr = `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}:${date.getSeconds().toString().padStart(2,'0')}`;
+            cacheDiv.innerHTML = `<i class="fas fa-database"></i> كاش: ${timeStr} <button class="refresh-cache-btn" onclick="forceRefreshData()">تحديث</button>`;
+            cacheDiv.style.background = "rgba(46,213,115,0.9)";
+        } else {
+            cacheDiv.innerHTML = `<i class="fas fa-database"></i> بدون كاش <button class="refresh-cache-btn" onclick="forceRefreshData()">تحديث</button>`;
+            cacheDiv.style.background = "rgba(0,0,0,0.7)";
+        }
+        
+        setTimeout(() => {
+            cacheDiv.style.opacity = "0.7";
+            setTimeout(() => { cacheDiv.style.opacity = "1"; }, 2000);
+        }, 3000);
+    }
+    
+    // تحديث البيانات من Firebase بالقوة
+    async function forceRefreshData() {
+        showToast('🔄 جاري تحديث البيانات من الخادم...', false);
+        await loadDataFromFirebase(true);
+        showToast('✅ تم تحديث البيانات بنجاح', false);
+    }
     
     let currentUserRole = 'admin';
     let ads = [], categories = [], products = [], coupons = [], orders = [];
@@ -336,7 +443,7 @@
         return data.secure_url;
     }
     
-    // ==================== Realtime Listeners ====================
+    // ==================== Realtime Listeners (مع تحديث الكاش تلقائياً) ====================
     function setupRealtimeListeners() {
         if (realtimeListeners.orders) db.ref('orders').off('value', realtimeListeners.orders);
         realtimeListeners.orders = db.ref('orders').on('value', (snapshot) => {
@@ -344,6 +451,8 @@
                 const ordersData = snapshot.val();
                 orders = Object.keys(ordersData).map(key => ({ id: key, ...ordersData[key] }));
                 renderOrders();
+                // تحديث الكاش عند تغيير البيانات
+                saveAllDataToCache();
             } else {
                 orders = [];
                 renderOrders();
@@ -357,6 +466,7 @@
                 products = Object.keys(productsData).map(key => ({ id: key, ...productsData[key] }));
                 renderProducts();
                 updateCategorySelects();
+                saveAllDataToCache();
             } else {
                 products = [];
                 renderProducts();
@@ -373,6 +483,7 @@
                 renderCategories();
                 renderSubcategories();
                 updateCategorySelects();
+                saveAllDataToCache();
             }
         });
         
@@ -382,6 +493,7 @@
                 const couponsData = snapshot.val();
                 coupons = Object.keys(couponsData).map(key => ({ id: key, ...couponsData[key] }));
                 renderCoupons();
+                saveAllDataToCache();
             } else {
                 coupons = [];
                 renderCoupons();
@@ -394,6 +506,7 @@
                 const adsData = snapshot.val();
                 ads = Object.keys(adsData).map(key => ({ id: key, ...adsData[key] }));
                 if (currentUserRole === 'super') renderAds();
+                saveAllDataToCache();
             } else {
                 ads = [];
                 if (currentUserRole === 'super') renderAds();
@@ -401,7 +514,95 @@
         });
     }
     
-    // ==================== عرض الطلبات (مع جدول الفاتورة المحسن) ====================
+    // حفظ جميع البيانات في الكاش
+    function saveAllDataToCache() {
+        const allData = {
+            ads: ads,
+            categories: categories,
+            products: products,
+            coupons: coupons,
+            orders: orders,
+            savedAt: Date.now()
+        };
+        CacheManager.set('allData', allData);
+        updateCacheStatus();
+    }
+    
+    // تحميل البيانات من الكاش أولاً ثم من Firebase
+    async function loadDataWithCache() {
+        // محاولة تحميل البيانات من الكاش أولاً
+        const cachedData = CacheManager.get('allData');
+        
+        if (cachedData && cachedData.categories && cachedData.products) {
+            console.log('✅ تم تحميل البيانات من الكاش');
+            // استعادة البيانات من الكاش
+            ads = cachedData.ads || [];
+            categories = cachedData.categories || [];
+            products = cachedData.products || [];
+            coupons = cachedData.coupons || [];
+            orders = cachedData.orders || [];
+            
+            categories.forEach((c, idx) => { 
+                if (c.order === undefined) c.order = idx; 
+                if (!c.subcategories) c.subcategories = {}; 
+            });
+            categories.sort((a,b) => (a.order || 0) - (b.order || 0));
+            
+            updateCategorySelects();
+            renderAll();
+            showToast('✅ تم تحميل البيانات من الذاكرة المؤقتة', false);
+            updateCacheStatus();
+        }
+        
+        // ثم تحميل البيانات من Firebase في الخلفية وتحديثها
+        await loadDataFromFirebase(false);
+    }
+    
+    // تحميل البيانات من Firebase
+    async function loadDataFromFirebase(forceShowToast = false) {
+        try {
+            console.log('🔄 جاري تحديث البيانات من Firebase...');
+            const [adsSnap, catSnap, prodSnap, couponsSnap, ordersSnap] = await Promise.all([
+                db.ref('ads').once('value'),
+                db.ref('categories').once('value'),
+                db.ref('products').once('value'),
+                db.ref('coupons').once('value'),
+                db.ref('orders').once('value')
+            ]);
+            
+            const newAds = adsSnap.val() ? Object.keys(adsSnap.val()).map(k=>({id:k, ...adsSnap.val()[k]})) : [];
+            const newCategories = catSnap.val() ? Object.keys(catSnap.val()).map(k=>({id:k, ...catSnap.val()[k]})) : [];
+            const newProducts = prodSnap.val() ? Object.keys(prodSnap.val()).map(k=>({id:k, ...prodSnap.val()[k]})) : [];
+            const newCoupons = couponsSnap.val() ? Object.keys(couponsSnap.val()).map(k=>({id:k, ...couponsSnap.val()[k]})) : [];
+            const newOrders = ordersSnap.val() ? Object.keys(ordersSnap.val()).map(k=>({id:k, ...ordersSnap.val()[k]})) : [];
+            
+            newCategories.forEach((c, idx) => { if (c.order === undefined) c.order = idx; if (!c.subcategories) c.subcategories = {}; });
+            newCategories.sort((a,b) => (a.order || 0) - (b.order || 0));
+            
+            // تحديث المتغيرات العالمية
+            ads = newAds;
+            categories = newCategories;
+            products = newProducts;
+            coupons = newCoupons;
+            orders = newOrders;
+            
+            updateCategorySelects();
+            renderAll();
+            
+            // حفظ في الكاش
+            saveAllDataToCache();
+            
+            if (forceShowToast) {
+                showToast('✅ تم تحديث البيانات من الخادم', false);
+            }
+            console.log('✅ تم تحديث البيانات من Firebase');
+        } catch(err) { 
+            console.error(err); 
+            if (forceShowToast) showToast("خطأ في تحميل البيانات", true);
+        }
+    }
+    
+    // ==================== عرض الطلبات ====================
     function renderOrders() {
         const container = document.getElementById('ordersList');
         const statsSpan = document.getElementById('ordersStats');
@@ -416,7 +617,6 @@
         if (filtered.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد طلبات بعد</div>'; return; }
         
         container.innerHTML = filtered.map(order => {
-            // Build items table
             let itemsTable = `
                 <table class="invoice-table" style="width:100%; margin-top:12px;">
                     <thead>
@@ -604,7 +804,16 @@
         if (input) input.value = nextOrder;
     }
 
-    function renderAll() { if (currentUserRole === 'super') renderAds(); renderCategories(); renderSubcategories(); renderProducts(); renderCoupons(); renderOrders(); updateCategorySelects(); updateNewCatOrder(); }
+    function renderAll() { 
+        if (currentUserRole === 'super') renderAds(); 
+        renderCategories(); 
+        renderSubcategories(); 
+        renderProducts(); 
+        renderCoupons(); 
+        renderOrders(); 
+        updateCategorySelects(); 
+        updateNewCatOrder(); 
+    }
     
     // ==================== Category Functions ====================
     window.openEditCat = (id) => { document.getElementById(`editCat_${id}`).classList.add('open'); };
@@ -920,39 +1129,11 @@
             const couponsObj = {}; coupons.forEach(c => { couponsObj[c.id] = { code: c.code, type: c.type, value: c.value, minAmount: c.minAmount || null, expiryDate: c.expiryDate || null, usageLimit: c.usageLimit !== undefined ? c.usageLimit : null, usedCount: c.usedCount || 0, active: c.active !== false }; }); await db.ref('coupons').set(couponsObj);
             const ordersObj = {}; orders.forEach(o => { ordersObj[o.id] = o; }); await db.ref('orders').set(ordersObj);
             renderAll();
+            saveAllDataToCache(); // حفظ في الكاش بعد الحفظ
         } catch (err) { console.error(err); showToast("حفظ البيانات فشل: "+err.message, true); }
     }
     
-    async function loadData() {
-        try {
-            const [adsSnap, catSnap, prodSnap, couponsSnap, ordersSnap] = await Promise.all([
-                db.ref('ads').once('value'),
-                db.ref('categories').once('value'),
-                db.ref('products').once('value'),
-                db.ref('coupons').once('value'),
-                db.ref('orders').once('value')
-            ]);
-            ads = adsSnap.val() ? Object.keys(adsSnap.val()).map(k=>({id:k, ...adsSnap.val()[k]})) : [];
-            categories = catSnap.val() ? Object.keys(catSnap.val()).map(k=>({id:k, ...catSnap.val()[k]})) : [];
-            products = prodSnap.val() ? Object.keys(prodSnap.val()).map(k=>({id:k, ...prodSnap.val()[k]})) : [];
-            coupons = couponsSnap.val() ? Object.keys(couponsSnap.val()).map(k=>({id:k, ...couponsSnap.val()[k]})) : [];
-            orders = ordersSnap.val() ? Object.keys(ordersSnap.val()).map(k=>({id:k, ...ordersSnap.val()[k]})) : [];
-            categories.forEach((c, idx) => { if (c.order === undefined) c.order = idx; if (!c.subcategories) c.subcategories = {}; });
-            categories.sort((a,b) => (a.order || 0) - (b.order || 0));
-            updateCategorySelects();
-            renderAll();
-            
-            setupRealtimeListeners();
-            
-            document.getElementById('searchProducts')?.addEventListener('input', (e) => { lastSearchText = e.target.value; adminDisplayedCount = 20; renderProducts(); });
-            document.getElementById('searchOrders')?.addEventListener('input', (e) => { lastOrderSearchText = e.target.value; renderOrders(); });
-            
-            // تحميل الإعدادات من Firebase وعرضها في واجهة الإعدادات
-            await loadSettingsFromFirebase();
-        } catch(err) { console.error(err); showToast("خطأ في تحميل البيانات", true); }
-    }
-    
-    // ==================== إعدادات التغليف والباركود - محسنة ====================
+    // ==================== إعدادات التغليف والباركود ====================
     let giftBoxSettings = { threshold: 0, message: '' };
     let paymentBarcodeSettings = { enabled: false, image: '', title: '', description: '' };
     
@@ -1014,7 +1195,6 @@
         
         paymentBarcodeSettings = { enabled, title, description, image: imageUrl };
         
-        // حفظ في Firebase أولاً ثم localStorage
         let firebaseSuccess = false;
         try {
             await db.ref('settings/paymentBarcode').set(paymentBarcodeSettings);
@@ -1030,7 +1210,6 @@
             showToast('⚠️ تم الحفظ محلياً فقط (راجع صلاحيات Firebase)', true);
         }
         
-        // تحديث المعاينة
         document.getElementById('previewBarcodeStatus').textContent = enabled ? 'مفعل ✅' : 'معطل ❌';
         document.getElementById('previewBarcodeStatus').style.color = enabled ? '#2ed573' : '#ff4757';
         if (imageUrl) {
@@ -1067,10 +1246,13 @@
             const role = roleSnap.val();
             if (role === 'super') { currentUserRole = 'super'; }
             else { currentUserRole = 'admin'; document.querySelector('.tab-btn[data-tab="ads"]').style.display = 'none'; }
-            await loadData();
-        } catch (err) { currentUserRole = 'admin'; await loadData(); }
+            await loadDataWithCache(); // استخدام التحميل مع الكاش
+            await loadSettingsFromFirebase();
+            setupRealtimeListeners();
+        } catch (err) { currentUserRole = 'admin'; await loadDataWithCache(); }
     });
     document.getElementById('logoutBtn').onclick = () => auth.signOut().then(() => window.location.href = 'viola-access-cp0596lu.html');
+    document.getElementById('refreshCacheBtn').onclick = () => forceRefreshData();
     
     window.tempSizes = {};
     window.tempColors = {};

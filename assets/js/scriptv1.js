@@ -518,6 +518,32 @@ async function submitOrderWithPayment() {
             closeOrderModal();
             closeCartFn();
 
+
+            // Send Telegram notification
+            try {
+                const BOT_TOKEN = '8939506093:AAEPHjNCAYHfFw6kvdegUkpGpSouGghWkB4';
+                const CHAT_IDS = ['5086011016', '8750720262'];
+                const msg = '🛒 طلب جديد في ڤيولا!\n' +
+                    '━━━━━━━━━━━━━━\n' +
+                    '👤 العميل: ' + (pendingOrderData.customer.fullName || 'غير معروف') + '\n' +
+                    '📱 الهاتف: ' + (pendingOrderData.customer.phone || 'غير معروف') + '\n' +
+                    '📍 المدينة: ' + (pendingOrderData.customer.city || 'غير معروف') + '\n' +
+                    '💰 المبلغ: ' + formatPrice(pendingOrderData.total) + ' $\n' +
+                    '📦 عدد المنتجات: ' + pendingOrderData.items.reduce((s, i) => s + i.qty, 0) + '\n' +
+                    '⏰ الوقت: ' + new Date().toLocaleString('ar-SY');
+
+                CHAT_IDS.forEach(chatId => {
+                    fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: msg,
+                            parse_mode: 'HTML'
+                        })
+                    }).catch(err => console.log('Telegram error for ' + chatId + ':', err));
+                });
+            } catch(e) { console.log('Telegram notify error:', e); }
             setTimeout(() => {
                 showSuccessModal(pendingOrderData.customer.phone);
             }, 300);
