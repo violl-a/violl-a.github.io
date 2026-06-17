@@ -493,7 +493,7 @@ async function submitOrderWithPayment() {
             // Send Telegram notification
             try {
                 const BOT_TOKEN = '8939506093:AAEPHjNCAYHfFw6kvdegUkpGpSouGghWkB4';
-                const CHAT_IDS = [];
+                const CHAT_IDS = ['5086011016'];
                 const msg = '🛒 طلب جديد في ڤيولا!\n' +
                     '━━━━━━━━━━━━━━\n' +
                     '👤 العميل: ' + (pendingOrderData.customer.fullName || 'غير معروف') + '\n' +
