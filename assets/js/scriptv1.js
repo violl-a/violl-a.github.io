@@ -551,7 +551,7 @@ async function submitOrderWithPayment() {
             // Send Telegram notification
             try {
                 const BOT_TOKEN = '8939506093:AAEPHjNCAYHfFw6kvdegUkpGpSouGghWkB4';
-                const CHAT_IDS = ['5086011016', '8750720262'];
+                const CHAT_IDS = [];
                 const msg = '🛒 طلب جديد في ڤيولا!\n' +
                     '━━━━━━━━━━━━━━\n' +
                     '👤 العميل: ' + (pendingOrderData.customer.fullName || 'غير معروف') + '\n' +
@@ -1625,6 +1625,8 @@ function initClearSearchButton() {
         }
     }
 
+
+    
     searchInput.addEventListener('input', toggleClearBtn);
     searchInput.addEventListener('keyup', toggleClearBtn);
 
@@ -1646,4 +1648,5 @@ function initClearSearchButton() {
 
 document.addEventListener('DOMContentLoaded', function() {
     initClearSearchButton();
-});
+}
+);
