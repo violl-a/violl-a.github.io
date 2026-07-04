@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "enath11"
+  },
+  "targets": {
+    "enath11": {
+      "hosting": {
+        "viola-store": [
+          "viola-store"
+        ],
+        "viola-style": [
+          "viola-style"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
