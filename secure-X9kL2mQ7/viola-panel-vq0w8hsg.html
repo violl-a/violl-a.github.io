@@ -373,59 +373,7 @@
     // ============================================
     // ✅ دالة ضغط الصورة وتغيير حجمها إلى 1200×900
     // ============================================
-    // async function compressImage(file) {
-    //     return new Promise((resolve, reject) => {
-    //         const reader = new FileReader();
-    //         reader.readAsDataURL(file);
-    //         reader.onload = (e) => {
-    //             const img = new Image();
-    //             img.src = e.target.result;
-    //             img.onload = () => {
-    //                 const canvas = document.createElement('canvas');
-    //                 // ✅ المقاس المطلوب: 1200 عرض × 900 ارتفاع
-    //                 const targetWidth = 900;
-    //                 const targetHeight = 1200;
-                    
-    //                 canvas.width = targetWidth;
-    //                 canvas.height = targetHeight;
-                    
-    //                 const ctx = canvas.getContext('2d');
-                    
-    //                 // تعبئة الخلفية باللون الأبيض
-    //                 ctx.fillStyle = '#ffffff';
-    //                 ctx.fillRect(0, 0, targetWidth, targetHeight);
-                    
-    //                 // حساب النسبة للحفاظ على الأبعاد مع تغطية كاملة
-    //                 const imgRatio = img.width / img.height;
-    //                 const targetRatio = targetWidth / targetHeight;
-                    
-    //                 let drawWidth, drawHeight, offsetX, offsetY;
-                    
-    //                 if (imgRatio > targetRatio) {
-    //                     // الصورة أوسع: نضبط العرض ونقص الارتفاع
-    //                     drawWidth = targetWidth;
-    //                     drawHeight = targetWidth / imgRatio;
-    //                     offsetX = 0;
-    //                     offsetY = (targetHeight - drawHeight) / 2;
-    //                 } else {
-    //                     // الصورة أطول: نضبط الارتفاع ونقص العرض
-    //                     drawHeight = targetHeight;
-    //                     drawWidth = targetHeight * imgRatio;
-    //                     offsetX = (targetWidth - drawWidth) / 2;
-    //                     offsetY = 0;
-    //                 }
-                    
-    //                 ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-                    
-    //                 // تحويل إلى blob بجودة 85%
-    //                 canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.85);
-    //             };
-    //             img.onerror = reject;
-    //         };
-    //         reader.onerror = reject;
-    //     });
-    // }
-    
+
 async function compressImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -436,7 +384,7 @@ async function compressImage(file) {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 // ✅ المقاس المطلوب: 1200 عرض × 900 ارتفاع
-                const targetWidth = 900;
+                const targetWidth = 1002;
                 const targetHeight = 1200;
                 
                 canvas.width = targetWidth;
