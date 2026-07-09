@@ -44,32 +44,68 @@ function formatPrice(price) {
 }
 
 // ============================================
+// FILTER OUT OF STOCK ITEMS FROM CART
+// ============================================
+function filterOutOfStockItems() {
+    let removed = false;
+    cart = cart.filter(item => {
+        // البحث عن المنتج في قاعدة البيانات
+        const product = products.find(p => p.id === item.id);
+        if (!product) {
+            removed = true;
+            return false;
+        }
+        // إذا كانت الكمية 0 أو أقل، نزيله من السلة
+        if (product.quantity !== undefined && product.quantity <= 0) {
+            removed = true;
+            showToast(`⚠️ تم إزالة "${item.name}" من السلة لأنه غير متوفر`, true);
+            return false;
+        }
+        return true;
+    });
+    if (removed) {
+        saveCartToLocal();
+        updateCartUI();
+    }
+    return removed;
+}
+
+// ============================================
 // DESIGNER CREDIT - Helper Function
 // ============================================
 function getDesignerCredit(style = 'light') {
     if (style === 'light') {
         return `
-            <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f8bbd9; text-align:center; font-size:0.7rem; color:#b08a9e;">
+            <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f8bbd9; text-align:center; font-size:0.7rem; color:#b08a9e; cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
                 <i class="fas fa-code" style="color:#e91e63; font-size:0.65rem;"></i>
                 تم التصميم والتطوير بواسطة 
-                <strong style="color:#e91e63; font-weight:700;">أحمد كلاوي</strong>
+                <strong style="color:#e91e63; font-weight:700; transition:0.3s;" onmouseover="this.style.color='#c2185b'" onmouseout="this.style.color='#e91e63'">أحمد كلاوي</strong>
                 <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+                <span style="display:inline-block; font-size:0.55rem; color:#b08a9e; margin-right:4px;">
+                    <i class="fas fa-arrow-down"></i> اضغط للتواصل
+                </span>
             </div>
         `;
     } else if (style === 'dark') {
         return `
-            <div style="margin-top:14px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.15); text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.7);">
+            <div style="margin-top:14px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.15); text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.7); cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
                 <i class="fas fa-code" style="color:#ff6b9d; font-size:0.7rem;"></i>
                 تم التصميم والتطوير بواسطة 
-                <strong style="color:#ffffff; font-weight:700;">أحمد كلاوي</strong>
+                <strong style="color:#ffffff; font-weight:700; transition:0.3s;" onmouseover="this.style.color='#ff6b9d'" onmouseout="this.style.color='#ffffff'">أحمد كلاوي</strong>
                 <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+                <span style="display:inline-block; font-size:0.6rem; color:rgba(255,255,255,0.5); margin-right:4px;">
+                    <i class="fas fa-arrow-down"></i> تواصل
+                </span>
             </div>
         `;
     } else if (style === 'minimal') {
         return `
-            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #f8bbd9; text-align:center; font-size:0.65rem; color:#b08a9e;">
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #f8bbd9; text-align:center; font-size:0.65rem; color:#b08a9e; cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
                 <i class="fas fa-code" style="color:#e91e63;"></i>
-                تصميم <strong style="color:#e91e63;">أحمد كلاوي</strong>
+                تصميم <strong style="color:#e91e63; transition:0.3s;" onmouseover="this.style.color='#c2185b'" onmouseout="this.style.color='#e91e63'">أحمد كلاوي</strong>
+                <span style="display:inline-block; font-size:0.5rem; color:#b08a9e; margin-right:3px;">
+                    <i class="fas fa-arrow-down"></i>
+                </span>
             </div>
         `;
     }
@@ -462,6 +498,15 @@ function closePaymentStep() {
 
 async function submitOrderWithPayment() {
     if (!pendingOrderData) return;
+    
+    // ✅ التحقق من المنتجات المنتهية قبل إرسال الطلب
+    filterOutOfStockItems();
+    
+    if (cart.length === 0) {
+        showToast('⚠️ السلة فارغة أو تحتوي على منتجات غير متوفرة', true);
+        closePaymentStep();
+        return;
+    }
 
     pendingOrderData.paymentMethod = selectedPaymentMethod;
     pendingOrderData.giftWrap = {
@@ -562,6 +607,8 @@ function setupRealtimeListeners() {
                 renderCategoryProducts(true);
                 renderSubCategories();
             }
+            // تحديث السلة عند تغير المنتجات (لإزالة المنتهية)
+            filterOutOfStockItems();
         }
     });
     
@@ -780,11 +827,27 @@ function addToCart(product, selectedSize = null, selectedColor = null) {
 }
 
 function removeFromCart(index) { cart.splice(index, 1); saveCartToLocal(); updateCartUI(); }
+
 function updateQty(index, change) {
     if (!cart[index]) return;
+    
+    // التحقق من توفر المنتج قبل زيادة الكمية
+    if (change > 0) {
+        const product = products.find(p => p.id === cart[index].id);
+        if (product && product.quantity !== undefined && product.quantity <= 0) {
+            showToast('⚠️ هذا المنتج غير متوفر حالياً', true);
+            removeFromCart(index);
+            return;
+        }
+    }
+    
     cart[index].qty += change;
-    if (cart[index].qty <= 0) removeFromCart(index);
-    else { saveCartToLocal(); updateCartUI(); }
+    if (cart[index].qty <= 0) {
+        removeFromCart(index);
+    } else {
+        saveCartToLocal();
+        updateCartUI();
+    }
 }
 
 // ============================================
@@ -872,6 +935,9 @@ function removeCoupon() {
 }
 
 function updateCartUI() {
+    // ✅ التحقق من المنتجات المنتهية عند تحديث واجهة السلة
+    filterOutOfStockItems();
+    
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     const { subtotal, discount, discountMessage, finalTotal } = calculateTotals();
     const cartCount = document.getElementById('cartCount');
@@ -996,10 +1062,39 @@ function showToast(message, isError = false) {
 // ============================================
 // Modal Functions
 // ============================================
-function openCart() { const sidebar = document.getElementById('cartSidebar'); const overlay = document.getElementById('cartOverlay'); if (sidebar && overlay) { sidebar.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }
+function openCart() {
+    filterOutOfStockItems(); // ✅ التحقق من المنتجات المنتهية عند فتح السلة
+    const sidebar = document.getElementById('cartSidebar');
+    const overlay = document.getElementById('cartOverlay');
+    if (sidebar && overlay) {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
 function closeCartFn() { const sidebar = document.getElementById('cartSidebar'); const overlay = document.getElementById('cartOverlay'); if (sidebar && overlay) { sidebar.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
-function openOrderModal() { if (cart.length === 0) { showToast('🛒 السلة فارغة! أضيفي منتجات أولاً', true); return; } closeCartFn(); setTimeout(() => { const modal = document.getElementById('orderModal'); const overlay = document.getElementById('modalOverlay'); if (modal && overlay) { modal.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }, 300); }
+
+function openOrderModal() {
+    filterOutOfStockItems(); // ✅ التحقق من المنتجات المنتهية عند فتح نموذج الطلب
+    if (cart.length === 0) {
+        showToast('🛒 السلة فارغة! أضيفي منتجات أولاً', true);
+        return;
+    }
+    closeCartFn();
+    setTimeout(() => {
+        const modal = document.getElementById('orderModal');
+        const overlay = document.getElementById('modalOverlay');
+        if (modal && overlay) {
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }, 300);
+}
+
 function closeOrderModal() { const modal = document.getElementById('orderModal'); const overlay = document.getElementById('modalOverlay'); if (modal && overlay) { modal.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
+
 function showSuccessModal(phoneNumber) { 
     const successModal = document.getElementById('successModal');
     if (successModal) {
@@ -1028,6 +1123,7 @@ function showSuccessModal(phoneNumber) {
         document.body.style.overflow = 'hidden';
     }
 }
+
 function closeSuccessModalAndGoHome() { 
     const successModal = document.getElementById('successModal');
     if (successModal) { 
@@ -1043,6 +1139,7 @@ function closeSuccessModalAndGoHome() {
         window.location.href = 'index.html';
     } 
 }
+
 function openContactModal() { const modal = document.getElementById('contactModal'); const overlay = document.getElementById('contactModalOverlay'); if (modal && overlay) { modal.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }
 function closeContactModalFn() { const modal = document.getElementById('contactModal'); const overlay = document.getElementById('contactModalOverlay'); if (modal && overlay) { modal.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
 
@@ -1520,6 +1617,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     document.getElementById('orderForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // ✅ التحقق من المنتجات المنتهية قبل عرض نموذج التأكيد
+        filterOutOfStockItems();
+        
+        if (cart.length === 0) {
+            showToast('⚠️ السلة فارغة أو تحتوي على منتجات غير متوفرة', true);
+            return;
+        }
 
         const fullName = document.getElementById('fullName')?.value.trim() || '';
         const phone = document.getElementById('phone')?.value.trim() || '';
