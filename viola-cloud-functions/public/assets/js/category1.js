@@ -43,6 +43,39 @@ function formatPrice(price) {
     return parseFloat(price).toFixed(2);
 }
 
+// ============================================
+// DESIGNER CREDIT - Helper Function
+// ============================================
+function getDesignerCredit(style = 'light') {
+    if (style === 'light') {
+        return `
+            <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f8bbd9; text-align:center; font-size:0.7rem; color:#b08a9e;">
+                <i class="fas fa-code" style="color:#e91e63; font-size:0.65rem;"></i>
+                تم التصميم والتطوير بواسطة 
+                <strong style="color:#e91e63; font-weight:700;">أحمد كلاوي</strong>
+                <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+            </div>
+        `;
+    } else if (style === 'dark') {
+        return `
+            <div style="margin-top:14px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.15); text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.7);">
+                <i class="fas fa-code" style="color:#ff6b9d; font-size:0.7rem;"></i>
+                تم التصميم والتطوير بواسطة 
+                <strong style="color:#ffffff; font-weight:700;">أحمد كلاوي</strong>
+                <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+            </div>
+        `;
+    } else if (style === 'minimal') {
+        return `
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #f8bbd9; text-align:center; font-size:0.65rem; color:#b08a9e;">
+                <i class="fas fa-code" style="color:#e91e63;"></i>
+                تصميم <strong style="color:#e91e63;">أحمد كلاوي</strong>
+            </div>
+        `;
+    }
+    return '';
+}
+
 // إخفاء رسائل Console الخاصة بالكوبونات
 const originalConsoleLog = console.log;
 console.log = function(...args) {
@@ -140,7 +173,7 @@ function showInvoicePreview(orderData) {
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
-            
+            ${getDesignerCredit('light')}
         </div>
     `;
 
@@ -330,6 +363,8 @@ function openPaymentStep(orderData) {
                         <i class="fas fa-info-circle" style="color:var(--primary); margin-left:8px;"></i>
                         <span style="font-size:0.85rem; color:var(--text-medium);">بعد إرسال الطلب، سيتم مراجعة وصل الدفع والتواصل معكِ للتأكيد</span>
                     </div>
+
+                    ${getDesignerCredit('light')}
                 </div>
                 <div class="payment-step-footer">
                     <button class="confirm-btn confirm-btn-secondary" id="paymentStepBack"><i class="fas fa-arrow-right"></i> رجوع</button>
@@ -898,6 +933,18 @@ function updateCartUI() {
         }
         cartFooterDiv.parentNode.insertBefore(couponSection, cartFooterDiv);
     }
+
+    // ✅ إضافة عبارة التصميم في نافذة السلة
+    const cartFooterEl = document.getElementById('cartFooter');
+    if (cartFooterEl) {
+        const existingCredit = cartFooterEl.querySelector('.designer-credit-cart');
+        if (existingCredit) existingCredit.remove();
+        
+        const creditDiv = document.createElement('div');
+        creditDiv.className = 'designer-credit-cart';
+        creditDiv.innerHTML = getDesignerCredit('minimal');
+        cartFooterEl.appendChild(creditDiv);
+    }
     
     const orderItemCount = document.getElementById('orderItemCount');
     const orderSubtotal = document.getElementById('orderSubtotal');
@@ -966,6 +1013,17 @@ function showSuccessModal(phoneNumber) {
             const formattedTime = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
             orderTimeSpan.textContent = formattedTime;
         }
+        // ✅ إضافة عبارة التصميم في نافذة نجاح الطلب
+        const successContent = successModal.querySelector('.success-content');
+        if (successContent) {
+            const existingCredit = successContent.querySelector('.designer-credit-success');
+            if (!existingCredit) {
+                const creditDiv = document.createElement('div');
+                creditDiv.className = 'designer-credit-success';
+                creditDiv.innerHTML = getDesignerCredit('light');
+                successContent.appendChild(creditDiv);
+            }
+        }
         successModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -1023,6 +1081,7 @@ function openProductOptions(productId, event) {
                     ${product.colors && product.colors.length ? `<div class="options-group"><label><i class="fas fa-palette"></i> اختاري اللون:</label><div class="options-buttons" id="colorOptions">${product.colors.map(color => `<button class="option-btn color-btn" data-color="${color}" style="background:${getColorBg(color)}">${color}</button>`).join('')}</div></div>` : ''}
                     <div class="options-quantity"><label><i class="fas fa-calculator"></i> الكمية:</label><div class="qty-selector"><button class="qty-dec" onclick="changeOptionsQty(-1)">-</button><span id="optionsQty">1</span><button class="qty-inc" onclick="changeOptionsQty(1)">+</button></div></div>
                     <button class="btn-add-to-cart-options" onclick="addToCartWithOptions()"><i class="fas fa-shopping-bag"></i> أضيفي إلى السلة</button>
+                    ${getDesignerCredit('minimal')}
                 </div>
             </div>
         </div>
@@ -1117,6 +1176,7 @@ function openQuickView(productId, event) {
             <button class="add-to-cart" onclick="${product.quantity !== undefined && product.quantity <= 0 ? 'showToast(\'⚠️ هذا المنتج غير متوفر حالياً\', true)' : `openProductOptions('${product.id}', event)`}" style="width:100%; padding:12px; border-radius:40px; gap:8px; margin-top:15px; ${product.quantity !== undefined && product.quantity <= 0 ? 'opacity:0.5; cursor:not-allowed;' : ''}">
                 <i class="fas ${product.quantity !== undefined && product.quantity <= 0 ? 'fa-times' : 'fa-shopping-bag'}"></i> ${product.quantity !== undefined && product.quantity <= 0 ? 'غير متوفر' : 'أضيفي إلى السلة'}
             </button>
+            ${getDesignerCredit('minimal')}
         </div>
     `;
     modal.classList.add('active');
