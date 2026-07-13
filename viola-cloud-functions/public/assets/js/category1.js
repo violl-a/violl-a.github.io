@@ -43,6 +43,75 @@ function formatPrice(price) {
     return parseFloat(price).toFixed(2);
 }
 
+// ============================================
+// FILTER OUT OF STOCK ITEMS FROM CART
+// ============================================
+function filterOutOfStockItems() {
+    let removed = false;
+    cart = cart.filter(item => {
+        // البحث عن المنتج في قاعدة البيانات
+        const product = products.find(p => p.id === item.id);
+        if (!product) {
+            removed = true;
+            return false;
+        }
+        // إذا كانت الكمية 0 أو أقل، نزيله من السلة
+        if (product.quantity !== undefined && product.quantity <= 0) {
+            removed = true;
+            showToast(`⚠️ تم إزالة "${item.name}" من السلة لأنه غير متوفر`, true);
+            return false;
+        }
+        return true;
+    });
+    if (removed) {
+        saveCartToLocal();
+        updateCartUI();
+    }
+    return removed;
+}
+
+// ============================================
+// DESIGNER CREDIT - Helper Function
+// ============================================
+function getDesignerCredit(style = 'light') {
+    if (style === 'light') {
+        return `
+            <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f8bbd9; text-align:center; font-size:0.7rem; color:#b08a9e; cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
+                <i class="fas fa-code" style="color:#e91e63; font-size:0.65rem;"></i>
+                تم التصميم والتطوير بواسطة 
+                <strong style="color:#e91e63; font-weight:700; transition:0.3s;" onmouseover="this.style.color='#c2185b'" onmouseout="this.style.color='#e91e63'">أحمد كلاوي</strong>
+                <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+                <span style="display:inline-block; font-size:0.55rem; color:#b08a9e; margin-right:4px;">
+                    <i class="fas fa-arrow-down"></i> اضغط للتواصل
+                </span>
+            </div>
+        `;
+    } else if (style === 'dark') {
+        return `
+            <div style="margin-top:14px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.15); text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.7); cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
+                <i class="fas fa-code" style="color:#ff6b9d; font-size:0.7rem;"></i>
+                تم التصميم والتطوير بواسطة 
+                <strong style="color:#ffffff; font-weight:700; transition:0.3s;" onmouseover="this.style.color='#ff6b9d'" onmouseout="this.style.color='#ffffff'">أحمد كلاوي</strong>
+                <i class="far fa-copyright" style="font-size:0.6rem;"></i> 2026
+                <span style="display:inline-block; font-size:0.6rem; color:rgba(255,255,255,0.5); margin-right:4px;">
+                    <i class="fas fa-arrow-down"></i> تواصل
+                </span>
+            </div>
+        `;
+    } else if (style === 'minimal') {
+        return `
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #f8bbd9; text-align:center; font-size:0.65rem; color:#b08a9e; cursor:pointer;" onclick="document.querySelector('.designer-credit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
+                <i class="fas fa-code" style="color:#e91e63;"></i>
+                تصميم <strong style="color:#e91e63; transition:0.3s;" onmouseover="this.style.color='#c2185b'" onmouseout="this.style.color='#e91e63'">أحمد كلاوي</strong>
+                <span style="display:inline-block; font-size:0.5rem; color:#b08a9e; margin-right:3px;">
+                    <i class="fas fa-arrow-down"></i>
+                </span>
+            </div>
+        `;
+    }
+    return '';
+}
+
 // إخفاء رسائل Console الخاصة بالكوبونات
 const originalConsoleLog = console.log;
 console.log = function(...args) {
@@ -91,6 +160,9 @@ function showInvoicePreview(orderData) {
     const { subtotal, discount, finalTotal, giftWrapPrice } = calculateTotals();
     const discountMessage = appliedCoupon ? (appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${appliedCoupon.value}$`) : '';
 
+    // تحديد اسم طريقة الدفع
+    const paymentMethodName = orderData.paymentMethod === 'shamcash' ? 'شام كاش 💳' : 'الدفع عند الاستلام 💵';
+
     let itemsHTML = '';
     orderData.items.forEach((item, idx) => {
         itemsHTML += `
@@ -117,6 +189,7 @@ function showInvoicePreview(orderData) {
                 <p><strong>الهاتف:</strong> ${orderData.customer.phone}</p>
                 <p><strong>المدينة:</strong> ${orderData.customer.city}</p>
                 <p><strong>العنوان:</strong> ${orderData.customer.address}</p>
+                <p><strong>طريقة الدفع:</strong> ${paymentMethodName}</p>
                 ${orderData.customer.notes ? `<p><strong>ملاحظات:</strong> ${orderData.customer.notes}</p>` : ''}
             </div>
             <div class="invoice-table-wrapper">
@@ -136,7 +209,7 @@ function showInvoicePreview(orderData) {
                 <p style="color:#e91e63; font-size:1.2rem;">الإجمالي النهائي: ${formatPrice(finalTotal)} $</p>
                 <p style="font-size:0.8rem;">* رسوم التوصيل تحسب عند التسليم</p>
             </div>
-            
+            ${getDesignerCredit('light')}
         </div>
     `;
 
@@ -232,12 +305,12 @@ function showConfirmModal(options) {
 // PAYMENT STEP MODAL - SEPARATE PAYMENT
 // ============================================
 let pendingOrderData = null;
-let selectedPaymentMethod = 'manual';
+let selectedPaymentMethod = 'shamcash';
 let paymentReceiptBase64 = null;
 
 function openPaymentStep(orderData) {
     pendingOrderData = orderData;
-    selectedPaymentMethod = 'manual';
+    selectedPaymentMethod = 'shamcash';
     paymentReceiptBase64 = null;
 
     const { subtotal, discount, finalTotal } = calculateTotals();
@@ -251,7 +324,7 @@ function openPaymentStep(orderData) {
                 <div class="payment-step-header">
                     <button class="close-payment-step" id="closePaymentStep"><i class="fas fa-times"></i></button>
                     <h3><i class="fas fa-credit-card"></i> إتمام الدفع</h3>
-                    <p>اختري طريقة الدفع المناسبة وأرفقي وصل التحويل</p>
+                    <p>اختري طريقة الدفع المناسبة</p>
                 </div>
                 <div class="payment-step-body">
                     <div class="order-info-summary">
@@ -270,41 +343,47 @@ function openPaymentStep(orderData) {
                         <i class="fas fa-hand-holding-usd" style="color:var(--primary);"></i> اختاري طريقة الدفع
                     </h4>
 
-                    <div class="payment-method-card selected" data-method="manual" onclick="window.selectPaymentMethod('manual')">
-                        <div class="payment-method-icon"><i class="fas fa-money-bill-wave"></i></div>
+                    <!-- خيار شام كاش (مع رفع صورة) -->
+                    <div class="payment-method-card selected" data-method="shamcash" onclick="window.selectPaymentMethod('shamcash')">
+                        <div class="payment-method-icon"><i class="fas fa-mobile-alt"></i></div>
                         <div class="payment-method-info">
-                            <h4>الدفع اليدوي</h4>
-                            <p>سيتم التواصل معكِ لتأكيد الطلب وإرسال تفاصيل الدفع</p>
+                            <h4>الدفع عبر شام كاش</h4>
+                            <p>أرفقي صورة وصل التحويل لإتمام الطلب</p>
                         </div>
                         <div class="payment-method-check"><i class="fas fa-check"></i></div>
                     </div>
 
-                    ${paymentBarcodeSettings.enabled && paymentBarcodeSettings.image ? `
-                    <div class="payment-method-card" data-method="barcode" onclick="window.selectPaymentMethod('barcode')">
-                        <div class="payment-method-icon"><i class="fas fa-qrcode"></i></div>
+                    <!-- خيار الدفع عند الاستلام (بدون أي إدخال) -->
+                    <div class="payment-method-card" data-method="cash" onclick="window.selectPaymentMethod('cash')">
+                        <div class="payment-method-icon"><i class="fas fa-hand-holding-usd"></i></div>
                         <div class="payment-method-info">
-                            <h4>الدفع السريع بالباركود</h4>
-                            <p>امسحي الباركود وادفعي فوراً</p>
+                            <h4>الدفع عند الاستلام</h4>
+                            <p>ادفعي نقداً عند وصول الطلب</p>
                         </div>
                         <div class="payment-method-check"><i class="fas fa-check"></i></div>
                     </div>
-                    ` : ''}
 
-                    <div id="barcodeSection" style="display:none;">
+                    <!-- قسم شام كاش (يظهر فقط عند اختيار شام كاش) -->
+                    <div id="shamcashSection" style="display:none;">
                         <div class="payment-barcode-section">
-                            <h4><i class="fas fa-qrcode"></i> ${paymentBarcodeSettings.title || 'الدفع السريع عبر الباركود 📱'}</h4>
-                            <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:12px;">${paymentBarcodeSettings.description || 'امسح الباركود باستخدام تطبيق المحفظة الإلكترونية لديك'}</p>
-                            <img src="${paymentBarcodeSettings.image}" alt="باركود الدفع" onerror="this.style.display='none'">
+                            <h4><i class="fas fa-qrcode"></i> ${paymentBarcodeSettings && paymentBarcodeSettings.title ? paymentBarcodeSettings.title : 'الدفع عبر شام كاش 📱'}</h4>
+                            <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:12px;">
+                                ${paymentBarcodeSettings && paymentBarcodeSettings.description ? paymentBarcodeSettings.description : 'قم بمسح الباركود باستخدام تطبيق شام كاش أو المحفظة الإلكترونية'}
+                            </p>
+                            ${paymentBarcodeSettings && paymentBarcodeSettings.image ? `<img src="${paymentBarcodeSettings.image}" alt="باركود الدفع" style="max-width:200px; border-radius:12px; border:2px solid var(--border); margin:10px auto; display:block;" onerror="this.style.display='none'">` : ''}
                             <div style="margin-top:10px; font-size:0.75rem; color:var(--text-light);">
                                 <i class="fas fa-shield-alt"></i> دفع آمن وفعال
                             </div>
                         </div>
                     </div>
 
-                    <div id="receiptSection">
-                        <div class="payment-receipt-section" id="barcodeReceiptSection">
+                    <!-- قسم رفع الوصل (يظهر فقط لشام كاش) -->
+                    <div id="shamcashReceiptSection" style="display:none;">
+                        <div class="payment-receipt-section">
                             <h4><i class="fas fa-upload"></i> إرفاق وصل الدفع</h4>
-                            <p style="font-size:0.8rem; color:var(--text-medium); margin-bottom:12px;">بعد إتمام الدفع بالباركود، يرجى إرفاق صورة الوصل لإثبات التحويل</p>
+                            <p style="font-size:0.8rem; color:var(--text-medium); margin-bottom:12px;">
+                                بعد إتمام الدفع عبر شام كاش، أرفقي صورة الوصل
+                            </p>
                             <div class="file-upload-btn" onclick="document.getElementById('paymentStepReceiptFile').click()">
                                 <i class="fas fa-cloud-upload-alt"></i> اختاري صورة الوصل
                             </div>
@@ -314,28 +393,14 @@ function openPaymentStep(orderData) {
                                 <img id="paymentStepPreviewImg" src="" alt="معاينة الوصل">
                             </div>
                         </div>
-
-                        <div class="payment-receipt-section" id="manualPaymentInfo" style="background:var(--bg-light); border:2px solid var(--border);">
-                            <h4><i class="fas fa-hand-holding-usd"></i> الدفع اليدوي</h4>
-                            <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:12px;">
-                                <i class="fas fa-info-circle" style="color:var(--primary);"></i> 
-                                يرجى إرسال طريقة الدفع المتوفرة لديكم
-                            </p>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <input type="text" id="manualPaymentMethod" placeholder="مثال: سيرياتيل كاش، حوالة بنكية، واتساب..." 
-                                    style="width:100%; padding:12px 16px; border:2px solid var(--border); border-radius:var(--radius-xl); 
-                                    font-family:'Tajawal',sans-serif; font-size:0.9rem; color:var(--text-dark); background:white; outline:none;">
-                            </div>
-                            <p style="font-size:0.75rem; color:var(--text-light); margin-top:10px;">
-                                <i class="fas fa-clock"></i> سيتم التواصل معكِ خلال 24 ساعة لتأكيد الطلب
-                            </p>
-                        </div>
                     </div>
 
                     <div class="payment-note" style="background:var(--primary-lightest); border-right:4px solid var(--primary); padding:12px 16px; border-radius:12px; margin-top:12px;">
                         <i class="fas fa-info-circle" style="color:var(--primary); margin-left:8px;"></i>
                         <span style="font-size:0.85rem; color:var(--text-medium);">بعد إرسال الطلب، سيتم مراجعة وصل الدفع والتواصل معكِ للتأكيد</span>
                     </div>
+
+                    ${getDesignerCredit('light')}
                 </div>
                 <div class="payment-step-footer">
                     <button class="confirm-btn confirm-btn-secondary" id="paymentStepBack"><i class="fas fa-arrow-right"></i> رجوع</button>
@@ -352,7 +417,7 @@ function openPaymentStep(orderData) {
     const overlay = document.getElementById('paymentStepOverlay');
     requestAnimationFrame(() => overlay.classList.add('active'));
 
-    window.selectPaymentMethod('manual');
+    window.selectPaymentMethod('shamcash');
 
     document.getElementById('paymentStepReceiptFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -407,20 +472,16 @@ window.selectPaymentMethod = function(method) {
     document.querySelectorAll('.payment-method-card').forEach(card => {
         card.classList.toggle('selected', card.dataset.method === method);
     });
-    const barcodeSection = document.getElementById('barcodeSection');
-    if (barcodeSection) {
-        barcodeSection.style.display = method === 'barcode' ? 'block' : 'none';
-    }
-    const barcodeReceiptSection = document.getElementById('barcodeReceiptSection');
-    const manualPaymentInfo = document.getElementById('manualPaymentInfo');
-    if (barcodeReceiptSection && manualPaymentInfo) {
-        if (method === 'barcode') {
-            barcodeReceiptSection.style.display = 'block';
-            manualPaymentInfo.style.display = 'none';
-        } else {
-            barcodeReceiptSection.style.display = 'none';
-            manualPaymentInfo.style.display = 'block';
-        }
+
+    const shamcashSection = document.getElementById('shamcashSection');
+    const shamcashReceiptSection = document.getElementById('shamcashReceiptSection');
+
+    if (method === 'shamcash') {
+        if (shamcashSection) shamcashSection.style.display = 'block';
+        if (shamcashReceiptSection) shamcashReceiptSection.style.display = 'block';
+    } else if (method === 'cash') {
+        if (shamcashSection) shamcashSection.style.display = 'none';
+        if (shamcashReceiptSection) shamcashReceiptSection.style.display = 'none';
     }
 };
 
@@ -437,6 +498,15 @@ function closePaymentStep() {
 
 async function submitOrderWithPayment() {
     if (!pendingOrderData) return;
+    
+    // ✅ التحقق من المنتجات المنتهية قبل إرسال الطلب
+    filterOutOfStockItems();
+    
+    if (cart.length === 0) {
+        showToast('⚠️ السلة فارغة أو تحتوي على منتجات غير متوفرة', true);
+        closePaymentStep();
+        return;
+    }
 
     pendingOrderData.paymentMethod = selectedPaymentMethod;
     pendingOrderData.giftWrap = {
@@ -444,23 +514,20 @@ async function submitOrderWithPayment() {
         price: (selectedGiftWrap && giftWrapSettings.price > 0) ? parseFloat(giftWrapSettings.price) : 0
     };
 
-    if (selectedPaymentMethod === 'manual') {
-        const manualMethodInput = document.getElementById('manualPaymentMethod');
-        const manualMethodText = manualMethodInput ? manualMethodInput.value.trim() : '';
-        pendingOrderData.paymentReceipt = manualMethodText ? {
-            data: manualMethodText,
-            type: 'manual_payment_method',
-            timestamp: Date.now()
-        } : null;
-    } else {
+    if (selectedPaymentMethod === 'shamcash') {
         pendingOrderData.paymentReceipt = paymentReceiptBase64 ? {
             data: paymentReceiptBase64,
             type: 'base64_image',
             timestamp: Date.now()
         } : null;
+        pendingOrderData.paymentStatus = 'pending';
+    } else if (selectedPaymentMethod === 'cash') {
+        pendingOrderData.paymentReceipt = null;
+        pendingOrderData.paymentStatus = 'cash_on_delivery';
+    } else {
+        pendingOrderData.paymentReceipt = null;
+        pendingOrderData.paymentStatus = 'pending';
     }
-
-    pendingOrderData.paymentStatus = 'pending';
 
     const newOrderRef = db.ref('orders').push();
     newOrderRef.set(pendingOrderData, function(error) {
@@ -489,16 +556,17 @@ async function submitOrderWithPayment() {
 
             showToast("✅ تم إرسال الطلب بنجاح!", false);
 
-
             // Send Telegram notification
             try {
                 const BOT_TOKEN = '8939506093:AAEPHjNCAYHfFw6kvdegUkpGpSouGghWkB4';
                 const CHAT_IDS = ['5086011016'];
+                const paymentMethodText = selectedPaymentMethod === 'shamcash' ? 'شام كاش 💳' : 'الدفع عند الاستلام 💵';
                 const msg = '🛒 طلب جديد في ڤيولا!\n' +
                     '━━━━━━━━━━━━━━\n' +
                     '👤 العميل: ' + (pendingOrderData.customer.fullName || 'غير معروف') + '\n' +
                     '📱 الهاتف: ' + (pendingOrderData.customer.phone || 'غير معروف') + '\n' +
                     '📍 المدينة: ' + (pendingOrderData.customer.city || 'غير معروف') + '\n' +
+                    '💳 طريقة الدفع: ' + paymentMethodText + '\n' +
                     '💰 المبلغ: ' + formatPrice(pendingOrderData.total) + ' $\n' +
                     '📦 عدد المنتجات: ' + pendingOrderData.items.reduce((s, i) => s + i.qty, 0) + '\n' +
                     '⏰ الوقت: ' + new Date().toLocaleString('ar-SY');
@@ -539,6 +607,8 @@ function setupRealtimeListeners() {
                 renderCategoryProducts(true);
                 renderSubCategories();
             }
+            // تحديث السلة عند تغير المنتجات (لإزالة المنتهية)
+            filterOutOfStockItems();
         }
     });
     
@@ -757,11 +827,27 @@ function addToCart(product, selectedSize = null, selectedColor = null) {
 }
 
 function removeFromCart(index) { cart.splice(index, 1); saveCartToLocal(); updateCartUI(); }
+
 function updateQty(index, change) {
     if (!cart[index]) return;
+    
+    // التحقق من توفر المنتج قبل زيادة الكمية
+    if (change > 0) {
+        const product = products.find(p => p.id === cart[index].id);
+        if (product && product.quantity !== undefined && product.quantity <= 0) {
+            showToast('⚠️ هذا المنتج غير متوفر حالياً', true);
+            removeFromCart(index);
+            return;
+        }
+    }
+    
     cart[index].qty += change;
-    if (cart[index].qty <= 0) removeFromCart(index);
-    else { saveCartToLocal(); updateCartUI(); }
+    if (cart[index].qty <= 0) {
+        removeFromCart(index);
+    } else {
+        saveCartToLocal();
+        updateCartUI();
+    }
 }
 
 // ============================================
@@ -849,6 +935,9 @@ function removeCoupon() {
 }
 
 function updateCartUI() {
+    // ✅ التحقق من المنتجات المنتهية عند تحديث واجهة السلة
+    filterOutOfStockItems();
+    
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     const { subtotal, discount, discountMessage, finalTotal } = calculateTotals();
     const cartCount = document.getElementById('cartCount');
@@ -910,6 +999,18 @@ function updateCartUI() {
         }
         cartFooterDiv.parentNode.insertBefore(couponSection, cartFooterDiv);
     }
+
+    // ✅ إضافة عبارة التصميم في نافذة السلة
+    const cartFooterEl = document.getElementById('cartFooter');
+    if (cartFooterEl) {
+        const existingCredit = cartFooterEl.querySelector('.designer-credit-cart');
+        if (existingCredit) existingCredit.remove();
+        
+        const creditDiv = document.createElement('div');
+        creditDiv.className = 'designer-credit-cart';
+        creditDiv.innerHTML = getDesignerCredit('minimal');
+        cartFooterEl.appendChild(creditDiv);
+    }
     
     const orderItemCount = document.getElementById('orderItemCount');
     const orderSubtotal = document.getElementById('orderSubtotal');
@@ -961,10 +1062,39 @@ function showToast(message, isError = false) {
 // ============================================
 // Modal Functions
 // ============================================
-function openCart() { const sidebar = document.getElementById('cartSidebar'); const overlay = document.getElementById('cartOverlay'); if (sidebar && overlay) { sidebar.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }
+function openCart() {
+    filterOutOfStockItems(); // ✅ التحقق من المنتجات المنتهية عند فتح السلة
+    const sidebar = document.getElementById('cartSidebar');
+    const overlay = document.getElementById('cartOverlay');
+    if (sidebar && overlay) {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
 function closeCartFn() { const sidebar = document.getElementById('cartSidebar'); const overlay = document.getElementById('cartOverlay'); if (sidebar && overlay) { sidebar.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
-function openOrderModal() { if (cart.length === 0) { showToast('🛒 السلة فارغة! أضيفي منتجات أولاً', true); return; } closeCartFn(); setTimeout(() => { const modal = document.getElementById('orderModal'); const overlay = document.getElementById('modalOverlay'); if (modal && overlay) { modal.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }, 300); }
+
+function openOrderModal() {
+    filterOutOfStockItems(); // ✅ التحقق من المنتجات المنتهية عند فتح نموذج الطلب
+    if (cart.length === 0) {
+        showToast('🛒 السلة فارغة! أضيفي منتجات أولاً', true);
+        return;
+    }
+    closeCartFn();
+    setTimeout(() => {
+        const modal = document.getElementById('orderModal');
+        const overlay = document.getElementById('modalOverlay');
+        if (modal && overlay) {
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }, 300);
+}
+
 function closeOrderModal() { const modal = document.getElementById('orderModal'); const overlay = document.getElementById('modalOverlay'); if (modal && overlay) { modal.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
+
 function showSuccessModal(phoneNumber) { 
     const successModal = document.getElementById('successModal');
     if (successModal) {
@@ -978,10 +1108,22 @@ function showSuccessModal(phoneNumber) {
             const formattedTime = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
             orderTimeSpan.textContent = formattedTime;
         }
+        // ✅ إضافة عبارة التصميم في نافذة نجاح الطلب
+        const successContent = successModal.querySelector('.success-content');
+        if (successContent) {
+            const existingCredit = successContent.querySelector('.designer-credit-success');
+            if (!existingCredit) {
+                const creditDiv = document.createElement('div');
+                creditDiv.className = 'designer-credit-success';
+                creditDiv.innerHTML = getDesignerCredit('light');
+                successContent.appendChild(creditDiv);
+            }
+        }
         successModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 }
+
 function closeSuccessModalAndGoHome() { 
     const successModal = document.getElementById('successModal');
     if (successModal) { 
@@ -997,6 +1139,7 @@ function closeSuccessModalAndGoHome() {
         window.location.href = 'index.html';
     } 
 }
+
 function openContactModal() { const modal = document.getElementById('contactModal'); const overlay = document.getElementById('contactModalOverlay'); if (modal && overlay) { modal.classList.add('active'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; } }
 function closeContactModalFn() { const modal = document.getElementById('contactModal'); const overlay = document.getElementById('contactModalOverlay'); if (modal && overlay) { modal.classList.remove('active'); overlay.classList.remove('active'); document.body.style.overflow = ''; } }
 
@@ -1035,6 +1178,7 @@ function openProductOptions(productId, event) {
                     ${product.colors && product.colors.length ? `<div class="options-group"><label><i class="fas fa-palette"></i> اختاري اللون:</label><div class="options-buttons" id="colorOptions">${product.colors.map(color => `<button class="option-btn color-btn" data-color="${color}" style="background:${getColorBg(color)}">${color}</button>`).join('')}</div></div>` : ''}
                     <div class="options-quantity"><label><i class="fas fa-calculator"></i> الكمية:</label><div class="qty-selector"><button class="qty-dec" onclick="changeOptionsQty(-1)">-</button><span id="optionsQty">1</span><button class="qty-inc" onclick="changeOptionsQty(1)">+</button></div></div>
                     <button class="btn-add-to-cart-options" onclick="addToCartWithOptions()"><i class="fas fa-shopping-bag"></i> أضيفي إلى السلة</button>
+                    ${getDesignerCredit('minimal')}
                 </div>
             </div>
         </div>
@@ -1129,6 +1273,7 @@ function openQuickView(productId, event) {
             <button class="add-to-cart" onclick="${product.quantity !== undefined && product.quantity <= 0 ? 'showToast(\'⚠️ هذا المنتج غير متوفر حالياً\', true)' : `openProductOptions('${product.id}', event)`}" style="width:100%; padding:12px; border-radius:40px; gap:8px; margin-top:15px; ${product.quantity !== undefined && product.quantity <= 0 ? 'opacity:0.5; cursor:not-allowed;' : ''}">
                 <i class="fas ${product.quantity !== undefined && product.quantity <= 0 ? 'fa-times' : 'fa-shopping-bag'}"></i> ${product.quantity !== undefined && product.quantity <= 0 ? 'غير متوفر' : 'أضيفي إلى السلة'}
             </button>
+            ${getDesignerCredit('minimal')}
         </div>
     `;
     modal.classList.add('active');
@@ -1472,6 +1617,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     document.getElementById('orderForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // ✅ التحقق من المنتجات المنتهية قبل عرض نموذج التأكيد
+        filterOutOfStockItems();
+        
+        if (cart.length === 0) {
+            showToast('⚠️ السلة فارغة أو تحتوي على منتجات غير متوفرة', true);
+            return;
+        }
 
         const fullName = document.getElementById('fullName')?.value.trim() || '';
         const phone = document.getElementById('phone')?.value.trim() || '';
